@@ -107,6 +107,24 @@ def parse_format_suggestion(bofh_response, format_sugg):
                 lst.append(format % positions)
     return u"\n".join(lst)
 
+class _Argument(object):
+    def __init__(self, bofh, map):
+        self._bofh = bofh
+        self.optional = map.get('optional', False)
+        self.repeat = map.get('repeat', False)
+        self.default = map.get('default')
+        self.type = map.get('type')
+        self.help_ref = map.get('help_ref', False)
+        self.prompt = map.get('prompt')
+
+    @property
+    def help(self):
+        if hasattr(self, '_help'):
+            return self._help
+        else:
+            help = self._help = self._bofh.arg_help(self.help_ref)
+            return help
+
 #XXX: make a metaclass for commands
 class _Command(object):
     def __init__(self, group, name, fullname, args):
@@ -141,6 +159,24 @@ class _Command(object):
             return parse_format_suggestion(ret, self.format_suggestion)
         return ret
 
+    @property
+    def args(self):
+        """Return information about each arg
+        Returns a list of dicts: {
+            optional: True if optional
+            repeat: True if arg is repeatable
+            default: string or True if get_default_param should be called
+            type: arg type
+            help_ref: string to send to help_ref
+            prompt: Text to send to prompter for arg
+        }"""
+        if hasattr(self, '_fixed_args'):
+            return self._fixed_args
+        ret = self._fixed_args = []
+        for arg in self._args:
+            ret.append(_Argument(self._bofh, arg))
+        return ret
+
 class _CommandGroup(object):
     def __init__(self, bofh, name):
         self._name = name
@@ -151,6 +187,13 @@ class _CommandGroup(object):
         command = _Command(self, cmd, full_cmd, args)
         self._cmds[cmd] = command
         setattr(self, cmd, command)
+
+    def get_bofh_command_keys(self):
+        u"""Get the list of group keys"""
+        return self._cmds.keys()
+
+    def get_bofh_command_value(self, key):
+        return self._cmds.get(key)
 
 class Bofh(object):
     def __init__(self, username, password, url, cert):
@@ -246,6 +289,13 @@ class Bofh(object):
                 self._groups[group] = grp
                 setattr(self, group, grp)
                 grp._add_command(cmd, key, args)
+
+    def get_bofh_command_keys(self):
+        u"""Get the list of group keys"""
+        return self._groups.keys()
+
+    def get_bofh_command_value(self, key):
+        return self._groups.get(key)
 
 def repl(bofh):
     import sys, locale
