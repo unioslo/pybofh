@@ -67,9 +67,29 @@ class Command(object):
                 return i
         return None, -1, []
 
+    def call(self):
+        return u"Command: «%s» not implemented" % u" ".join(map(lambda x: x[0], self.args))
+
 class BofhCommand(Command):
     def set_command(self, command):
         self.command = command
+
+    def get_args(self):
+        ret = []
+        for arg, _, _ in self.args[2:]:
+            if isinstance(arg, (list, tuple)):
+                inner = []
+                for j, _ in arg:
+                    inner.append(j)
+                ret.append(inner)
+            else:
+                ret.append(arg)
+        return ret
+
+    def call(self):
+        args = self.get_args()
+        print "%s(%s)" % (self.command._fullname, args)
+        return self.command(*args)
 
 class InternalCommand(Command):
     pass
