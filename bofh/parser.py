@@ -345,7 +345,7 @@ def lexer(text):
                     ret = []
             else:
                 ret.append(cur)
-        elif cur == u'(' or i == u')':
+        elif cur == u'(' or cur == u')':
             if ret:
                 yield u''.join(ret), start
                 ret = []
