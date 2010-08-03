@@ -62,8 +62,8 @@ def repl(bofh, charset=None):
     while True:
         line = raw_input(u"pybofh >>> ".encode(charset)).decode(charset)
         try:
-            print line
-            #print cmd(*line)
+            parse = parser.parse(bofh, line)
+            print parse.call()
         except:
             import traceback
             traceback.print_exc()

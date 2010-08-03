@@ -302,22 +302,3 @@ class Bofh(object):
     def get_bofh_command_value(self, key):
         return self._groups.get(key)
 
-def repl(bofh):
-    import sys, locale
-    while True:
-        print "pybofh >>> ",
-        line = sys.stdin.readline().decode(locale.getpreferredencoding()).strip().split()
-        cmd = bofh
-        while line and hasattr(cmd, line[0]):
-            cmd = getattr(cmd, line.pop(0))
-        try:
-            print cmd(*line)
-        except:
-            import traceback
-            traceback.print_exc()
-
-if __name__ == "__main__":
-    import getpass
-    a = connect(getpass.getuser(), getpass.getpass())
-    repl(a)
-
