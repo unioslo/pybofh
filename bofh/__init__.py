@@ -21,7 +21,7 @@
 
 import xmlrpclib as _rpc
 
-version = u"0.1"
+version = u"0.2"
 
 def get_default_url():
     return "https://cerebrum-uio.uio.no:8000"
@@ -156,6 +156,11 @@ class _Command(object):
         ret = self._bofh.run_command(self._fullname, *rest)
         with_format = not ('with_format' in kw and not kw['with_format'])
         if with_format and not isinstance(ret, basestring):
+            for i in rest:
+                if isinstance(i, (list, tuple)):
+                    return u'\n'.join(
+                            map(lambda x: parse_format_suggestion(x, self.format_suggestion), 
+                                ret))
             return parse_format_suggestion(ret, self.format_suggestion)
         return ret
 
