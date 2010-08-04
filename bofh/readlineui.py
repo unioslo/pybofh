@@ -53,6 +53,8 @@ class bofhcompleter(object):
             import traceback
             traceback.print_exc()
 
+script_file = None
+
 def repl(bofh, charset=None):
     import sys, locale
     if charset == None:
@@ -61,10 +63,20 @@ def repl(bofh, charset=None):
     readline.set_completer(bofhcompleter(bofh, charset))
     while True:
         line = raw_input(u"pybofh >>> ".encode(charset)).decode(charset)
+        if script_file is not None:
+            script_file.write("pybofh >>> %s\n" % line.encode(charset))
         try:
             parse = parser.parse(bofh, line)
-            print parse.call()
+            result = parse.call()
+            print result.encode(charset)
+            if script_file is not None:
+                script_file.write(result.encode(charset))
+                script_file.write(u"\n".encode(charset))
+        except SystemExit:
+            raise
         except:
             import traceback
             traceback.print_exc()
+            if script_file is not None:
+                traceback.print_exc(file=script_file)
 
