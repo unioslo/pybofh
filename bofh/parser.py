@@ -23,13 +23,13 @@ u"""This is the PyBofh command parser"""
 class SynErr(Exception):
     u"""Syntax error"""
     def __init__(self, msg, index=None):
-        super(SynErr, self).__init__(msg)
+        super(Exception, self).__init__(msg)
         self.index = index
 
 class IncompleteParse(SynErr):
     u"""Parser ran off end without finding matching " or )"""
     def __init__(self, msg, parse, expected):
-        super(IncompleteParse, self).__init__(msg, -1)
+        super(SynErr, self).__init__(msg, -1)
         self.parse = parse
         self.completions = expected
 
@@ -40,8 +40,9 @@ class NoGroup(SynErr):
         self.completions = completions
 
 class Command(object):
-    def __init__(self, line):
+    def __init__(self, bofh, line):
         self.args = []
+        self.bofh = bofh
         self.line = line
 
     def append(self, arg, index, complete):
@@ -67,8 +68,12 @@ class Command(object):
                 return i
         return None, -1, []
 
-    def call(self):
+    def eval(self):
         return u"Command: «%s» not implemented" % u" ".join(map(lambda x: x[0], self.args))
+
+    def call(self):
+        return self.eval()
+
 
 class BofhCommand(Command):
     def set_command(self, command):
@@ -86,23 +91,33 @@ class BofhCommand(Command):
                 ret.append(arg)
         return ret
 
-    def call(self):
+    def eval(self):
         args = self.get_args()
-        print "%s(%s)" % (self.command._fullname, args)
         return self.command(*args)
 
 class InternalCommand(Command):
-    pass
+    def eval(self):
+        import bofh.internal_commands as where
+        cmdname = self.args[0][2][0]
+        cmdref = getattr(where, cmdname)
+        args = [x[0] for x in self.args[1:] if x[1] != -1]
+        cmdref(self.bofh, *args)
 
 class HelpCommand(InternalCommand):
     pass
 
 class SingleCommand(InternalCommand):
-    def __init__(self, fullcmd, cmd, index, line):
+    def __init__(self, bofh, fullcmd, cmd, index, line):
+        super(InternalCommand, self).__init__(bofh, line)
         self.command = cmd
         self.index = index
-        self.line = line
         self.args = [(cmd, index, [fullcmd])]
+        import bofh.internal_commands as where
+        self.cmdref = getattr(where, fullcmd)
+
+    def eval(self):
+        import bofh.internal_commands as where
+        return self.cmdref(self.bofh)
 
 class FileCompleter(object):
     # XXX: Is this maybe standard in readline?
@@ -123,7 +138,7 @@ def _r(fname):
 
 def _parse_bofh_command(bofh, fullgrp, group, start, lex, line):
     grp = getattr(bofh, fullgrp)
-    ret = BofhCommand(line) # XXX: Args
+    ret = BofhCommand(bofh, line) # XXX: Args
     ret.append(group, start, [fullgrp])
     allcmds = grp.get_bofh_command_keys()
     try:
@@ -151,7 +166,7 @@ def _parse_bofh_command(bofh, fullgrp, group, start, lex, line):
     return ret
 
 def _parse_help(bofh, fullgrp, group, start, lex, line):
-    ret = HelpCommand(line)
+    ret = HelpCommand(bofh, line)
     ret.append(group, start, [fullgrp])
     args = []
     while True:
@@ -205,7 +220,7 @@ def _parse_help(bofh, fullgrp, group, start, lex, line):
     return ret
 
 def _parse_script(bofh, fullgrp, group, start, lex, line):
-    ret = InternalCommand(line)
+    ret = InternalCommand(bofh, line)
     ret.append(group, start, [fullgrp])
     args = []
     while True:
@@ -226,7 +241,7 @@ def _parse_script(bofh, fullgrp, group, start, lex, line):
     return ret
 
 def _parse_source(bofh, fullgrp, group, start, lex, line):
-    ret = InternalCommand(line)
+    ret = InternalCommand(bofh, line)
     ret.append(group, start, [fullgrp])
     args = []
     while True:
@@ -242,8 +257,10 @@ def _parse_source(bofh, fullgrp, group, start, lex, line):
         if u'--ignore-errors'.startswith(args[0]):
             ret.append(args[0][0], args[0][1], [u'--ignore-errors'])
         elif _r(args[0][0]):
+            ret.append(None, None, [])
             ret.append(args[0][0], args[0][1], [args[0][0]])
         else:
+            ret.append(None, None, [])
             ret.append(arg, idx, FileCompleter())
     elif len(args) == 2:
         if u'--ignore-errors'.startswith(args[0][0]):
@@ -256,7 +273,7 @@ def _parse_source(bofh, fullgrp, group, start, lex, line):
     return ret
 
 def _parse_single(bofh, fullgrp, group, start, lex, line):
-    return SingleCommand(fullgrp, group, start, line)
+    return SingleCommand(bofh, fullgrp, group, start, line)
 
 _internal_cmds = {
         u'help': _parse_help,

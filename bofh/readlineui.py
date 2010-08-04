@@ -67,7 +67,7 @@ def repl(bofh, charset=None):
             script_file.write("pybofh >>> %s\n" % line.encode(charset))
         try:
             parse = parser.parse(bofh, line)
-            result = parse.call()
+            result = parse.eval()
             print result.encode(charset)
             if script_file is not None:
                 script_file.write(result.encode(charset))

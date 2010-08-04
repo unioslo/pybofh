@@ -125,6 +125,26 @@ class _Argument(object):
             help = self._help = self._bofh.arg_help(self.help_ref)
             return help
 
+    def __unicode__(self):
+        stuff = ('type', 'optional', 'default')
+        return (u"{" + 
+                u", ".join(map(lambda x: x + u": %(" +x + u")s", stuff)) + 
+                u"}") % self.__dict__
+
+class _PromptFunc(object):
+    def __init__(self, bofh):
+        self._bofh = bofh
+        self.optional = False
+        self.repeat = False
+        self.default = False
+        self.type = False
+        self.help_ref = False
+        self.help = u"Prompt func"
+        self.prompt = False
+
+    def __unicode__(self):
+        return u"prompt_func"
+
 #XXX: make a metaclass for commands
 class _Command(object):
     def __init__(self, group, name, fullname, args):
@@ -177,9 +197,11 @@ class _Command(object):
         }"""
         if hasattr(self, '_fixed_args'):
             return self._fixed_args
-        ret = self._fixed_args = []
-        for arg in self._args:
-            ret.append(_Argument(self._bofh, arg))
+        if isinstance(self._args, basestring):
+            assert self._args == u"prompt_func"
+            ret = self._fixed_args = [_PromptFunc(self._bofh)]
+            return ret
+        ret = self._fixed_args = map(lambda x: _Argument(self._bofh, x), self._args)
         return ret
 
 class _CommandGroup(object):
