@@ -101,10 +101,27 @@ class InternalCommand(Command):
         cmdname = self.args[0][2][0]
         cmdref = getattr(where, cmdname)
         args = [x[0] for x in self.args[1:] if x[1] != -1]
-        cmdref(self.bofh, *args)
+        return cmdref(self.bofh, *args)
 
 class HelpCommand(InternalCommand):
-    pass
+    def get_args(self):
+        ret = []
+        for arg, _, _ in self.args[1:]:
+            if isinstance(arg, (list, tuple)):
+                inner = []
+                for j, _, _ in arg:
+                    inner.append(j)
+                ret.append(inner)
+            else:
+                ret.append(arg)
+        return ret
+
+    def eval(self):
+        import bofh.internal_commands as where
+        cmdname = self.args[0][2][0]
+        cmdref = getattr(where, cmdname)
+        args = self.get_args()
+        return cmdref(self.bofh, *args)
 
 class SingleCommand(InternalCommand):
     def __init__(self, bofh, fullcmd, cmd, index, line):
@@ -180,8 +197,10 @@ def _parse_help(bofh, fullgrp, group, start, lex, line):
         try:
             arg, idx = parse_string_or_list(lex)
             args.append((arg, idx))
-        except IncompleteParse:
+        except IncompleteParse, e:
             # XXX: handle better
+            if e.parse:
+                args.append(e.parse)
             break
 
     localcmds = _internal_cmds.keys()

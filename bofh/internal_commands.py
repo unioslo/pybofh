@@ -20,8 +20,25 @@
 
 from __future__ import with_statement
 
+_helptexts = {
+        u'help': u"help | help command | help command1 command2 -- Get help",
+        u'source': u"source [--ignore-errors] file -- Read commands from file",
+        u'script': u"script | script filename -- log to file",
+        u'quit': u"quit -- quit bofh",
+        u'commands': u"commands -- list commands"
+        }
+
 def help(bofh, *args):
-    return u""
+    if not args:
+        return bofh.help()
+    if len(args) == 1:
+        arg = args[0]
+        if isinstance(arg, list):
+            return u"\n".join(map(lambda x: help(bofh, x), arg))
+        if arg in _helptexts:
+            return _helptexts[arg]
+        return bofh.help(arg)
+    return bofh.help(*args)
 
 def source(bofh, ignore_errors=False, script=None):
     """Read lines from file, parse, and execute each line"""
