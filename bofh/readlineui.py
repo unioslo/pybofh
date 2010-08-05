@@ -49,6 +49,8 @@ class bofhcompleter(object):
             idx = readline.get_begidx()
             if idx == 0 or line[:idx].isspace():
                 self.completes = e.completions 
+        except parser.IncompleteParse, e:
+            self.completes = e.parse.complete(readline.get_begidx(), readline.get_endidx())
         except:
             import traceback
             traceback.print_exc()
