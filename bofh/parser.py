@@ -81,8 +81,10 @@ class BofhCommand(Command):
 
     def get_args(self):
         ret = []
-        for arg, _, _ in self.args[2:]:
-            if isinstance(arg, (list, tuple)):
+        for arg, pos, _ in self.args[2:]:
+            if pos == -1:
+                pass
+            elif isinstance(arg, (list, tuple)):
                 inner = []
                 for j, _ in arg:
                     inner.append(j)
@@ -106,8 +108,10 @@ class InternalCommand(Command):
 class HelpCommand(InternalCommand):
     def get_args(self):
         ret = []
-        for arg, _, _ in self.args[1:]:
-            if isinstance(arg, (list, tuple)):
+        for arg, pos, _ in self.args[1:]:
+            if pos == -1:
+                pass
+            elif isinstance(arg, (list, tuple)):
                 inner = []
                 for j, _, _ in arg:
                     inner.append(j)
