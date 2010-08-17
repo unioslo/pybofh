@@ -20,10 +20,11 @@
 # Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 
 from distutils.core import setup
+from bofh.version import version
 
 setup(name='pybofh',
       description='Cerebrum Bofh client',
-      version='0.2',
+      version=version,
       license='GPL',
       scripts=['scripts/bofh', 'scripts/passwd'],
       packages=['bofh'])
