@@ -21,7 +21,8 @@
 
 u"""Readline user interface for PyBofh"""
 
-import readline, parser
+import readline
+from . import parser
 
 class bofhcompleter(object):
     """Completer functor for bofh completion"""

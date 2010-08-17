@@ -105,7 +105,7 @@ class BofhCommand(Command):
 
 class InternalCommand(Command):
     def eval(self, *rest, **kw):
-        import bofh.internal_commands as where
+        from . import internal_commands as where
         cmdname = self.args[0][2][0]
         cmdref = getattr(where, cmdname)
         args = [x[0] for x in self.args[1:] if x[1] != -1]
@@ -127,7 +127,7 @@ class HelpCommand(InternalCommand):
         return ret
 
     def eval(self, *rest, **kw):
-        import bofh.internal_commands as where
+        from . import internal_commands as where
         cmdname = self.args[0][2][0]
         cmdref = getattr(where, cmdname)
         args = self.get_args()
@@ -139,11 +139,11 @@ class SingleCommand(InternalCommand):
         self.command = cmd
         self.index = index
         self.args = [(cmd, index, [fullcmd])]
-        import bofh.internal_commands as where
+        from . import internal_commands as where
         self.cmdref = getattr(where, fullcmd)
 
     def eval(self, *rest, **kw):
-        import bofh.internal_commands as where
+        from . import internal_commands as where
         return self.cmdref(self.bofh)
 
 class FileCompleter(object):

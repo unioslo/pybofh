@@ -42,7 +42,7 @@ def help(bofh, *args):
 
 def source(bofh, ignore_errors=False, script=None):
     """Read lines from file, parse, and execute each line"""
-    from bofh.parser import parse
+    from .parser import parse
     with open(script) as src:
         for line in src:
             stripped = line.strip()
@@ -57,8 +57,8 @@ def source(bofh, ignore_errors=False, script=None):
 
 def script(bofh, file=None):
     """Open file, and set it as script file for reader"""
-    import bofh.readlineui
-    bofh.readlineui = open(file, "wa")
+    from . import readlineui
+    readlineui = open(file, "wa")
 
 def quit(bofh):
     """Quit"""

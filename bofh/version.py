@@ -20,18 +20,5 @@
 # Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 
 
-__all__ = ['internal_commands', 'parser', 'proto', 'readlineui',
-        'version', 'get_default_url', 'get_default_cert', 'connect']
-import xmlrpclib as _rpc
-from . import proto
-
-def get_default_url():
-    return "https://cerebrum-uio.uio.no:8000"
-
-def get_default_cert():
-    return {}
-
-def connect(username, password, url=None, cert=None):
-    """Return a new Bofh() object."""
-    return proto.Bofh(username, password, url or get_default_url(), cert or get_default_cert())
+version = u"0.2"
 
