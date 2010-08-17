@@ -68,7 +68,10 @@ class Command(object):
                 return i
         return None, -1, []
 
-    def eval(self):
+    def eval(self, prompter=None):
+        """Evaluate the parsed expression.
+        prompter: Callable to get single input item
+        """
         return u"Command: «%s» not implemented" % u" ".join(map(lambda x: x[0], self.args))
 
     def call(self):
@@ -93,12 +96,15 @@ class BofhCommand(Command):
                 ret.append(arg)
         return ret
 
-    def eval(self):
+    def eval(self, prompter=None, *rest, **kw):
+        """Evaluate the parsed expression.
+        prompter: Callable to get single input item
+        """
         args = self.get_args()
-        return self.command(*args)
+        return self.command(prompter=prompter, *args)
 
 class InternalCommand(Command):
-    def eval(self):
+    def eval(self, *rest, **kw):
         import bofh.internal_commands as where
         cmdname = self.args[0][2][0]
         cmdref = getattr(where, cmdname)
@@ -120,7 +126,7 @@ class HelpCommand(InternalCommand):
                 ret.append(arg)
         return ret
 
-    def eval(self):
+    def eval(self, *rest, **kw):
         import bofh.internal_commands as where
         cmdname = self.args[0][2][0]
         cmdref = getattr(where, cmdname)
@@ -136,7 +142,7 @@ class SingleCommand(InternalCommand):
         import bofh.internal_commands as where
         self.cmdref = getattr(where, fullcmd)
 
-    def eval(self):
+    def eval(self, *rest, **kw):
         import bofh.internal_commands as where
         return self.cmdref(self.bofh)
 

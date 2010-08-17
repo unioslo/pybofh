@@ -136,7 +136,7 @@ class _PromptFunc(object):
         self._bofh = bofh
         self.optional = False
         self.repeat = False
-        self.default = False
+        self.default = None
         self.type = False
         self.help_ref = False
         self.help = u"Prompt func"
@@ -173,16 +173,91 @@ class _Command(object):
     format_suggestion = property(_get_format_suggestion, doc=u"Get format suggestion")
 
     def __call__(self, *rest, **kw):
-        ret = self._bofh.run_command(self._fullname, *rest)
+        promptfunc = kw.get('prompter')
+        if promptfunc:
+            args = self.prompt_missing_args(promptfunc, *rest)
+        else:
+            args = rest
+        ret = self._bofh.run_command(self._fullname, *args)
         with_format = not ('with_format' in kw and not kw['with_format'])
         if with_format and not isinstance(ret, basestring):
-            for i in rest:
+            for i in args:
                 if isinstance(i, (list, tuple)):
                     return u'\n'.join(
                             map(lambda x: parse_format_suggestion(x, self.format_suggestion), 
                                 ret))
             return parse_format_suggestion(ret, self.format_suggestion)
         return ret
+
+    def prompt_missing_args(self, prompt_func, *rest, **kw):
+        """Prompts the user for additional args"""
+        args = self.args
+        if args and isinstance(args[0], _PromptFunc):
+            return self._prompt_func(prompt_func, *rest, **kw)
+        if len(rest) > len(args):
+            return rest
+        has_prompted = False
+        ret = []
+        rest = list(rest)
+        for i in range(len(rest), len(args)):
+            if has_prompted or not args[i].optional:
+                has_prompted = True
+                arglst = rest + ret
+                ans = prompt_func(args[i].prompt, 
+                                       None, 
+                                       args[i].help,
+                                       self.get_default_param(i, arglst),
+                                       args[i].type,
+                                       args[i].optional)
+                if not ans and args[i].optional:
+                    return arglst
+                ret.append(ans)
+        return rest + ret
+
+    def get_default_param(self, num, args):
+        ret = self.args[num].default
+        if isinstance(ret, basestring):
+            return ret
+        if ret:
+            return self._bofh.get_default_param(self._fullname, args[0:num+1])
+        return None
+
+    def _prompt_func(self, prompt_func, *rest, **kw):
+        # 1. call_prompt_func with *rest -> 
+        #   {prompt: string, help_ref: key, last_arg: bool, default: None or value,
+        #    map: None or [[["Header", None], value], [[format, *args], value], ...],
+        #    raw: bool}
+        # 2. if prompt is None and last_arg is true, return rest
+        # 3. if map is not None, transform map into:
+        #    newmap = [(None, map[0][0]),       # header
+        #              (i if raw else map[i][1], map[i][0][0] % map[i][0][1]), ...]
+        # 4. prompt using string, and, if set, [default], i.e. 
+        #       prompt_func(prompt, newmap, help text, default)
+        # 5. User's answer is handled by prompt func, append arg to rest and restart.
+        args = list(rest)
+        result = self._bofh.call_prompt_func(self._fullname, *rest)
+        if result.get('prompt') is None and result.get('last_arg'):
+            return args
+        map = result.get('map')
+        newmap = []
+        if map:
+            newmap.append((None, map[0][0][0] % tuple(map[0][0][1:]) if u'%' in map[0][0][0] else map[0][0][0]))
+            i = 1
+            for val, key in map[1:]:
+                newmap.append((
+                    i if result.get('raw') else key,
+                    val[0] % tuple(val[1:]) if u'%' in val[0] else val[0]))
+                i += 1
+        ans = u""
+        hlp = result.get('help_ref')
+        if hlp:
+            hlp = self._bofh.arg_help(hlp)
+        while ans == u"":
+            ans = prompt_func(result.get('prompt'), 
+                              newmap, 
+                              hlp,
+                              result.get('default'))
+        return self._prompt_func(prompt_func, *(args + [ans]))
 
     @property
     def args(self):

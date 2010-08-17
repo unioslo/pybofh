@@ -57,6 +57,53 @@ class bofhcompleter(object):
 
 script_file = None
 
+def prompter(prompt, mapping, help, default, argtype=None, optional=False):
+    import getpass, locale
+    if default is not None:
+        _prompt = u"%s [%s] > " % (prompt, default)
+    else:
+        _prompt = u"%s > " % prompt
+    inputfunc = {
+            'accountPassword': getpass.getpass,
+            }.get(argtype, raw_input)
+    map = []
+    if mapping:
+        mapstr = [mapping[0][1]]
+        i = 1
+        for line in mapping[1:]:
+            map.append(line[0])
+            mapstr.append(u"%4s " % i + line[1])
+            i += 1
+        mapstr = u"\n".join(mapstr)
+    while True:
+        if map:
+            print mapstr
+        val = inputfunc(_prompt).strip().encode(locale.getpreferredencoding())
+        if not val and not default:
+            if optional:
+                return None
+            continue
+        elif not val:
+            return default
+        elif val == u'?':
+            if help is None:
+                print u"Sorry, no help available"
+            else:
+                print help
+        else:
+            if map:
+                try:
+                    i = int(val)
+                    if i < 1:
+                        raise IndexError("Negative")
+                    return map[i-1]
+                except ValueError:
+                    print u"Please type a number matching one of the items"
+                except IndexError:
+                    print u"The item you selected does not exist"
+            else:
+                return val
+
 def repl(bofh, charset=None):
     import sys, locale
     if charset == None:
@@ -69,7 +116,7 @@ def repl(bofh, charset=None):
             script_file.write("pybofh >>> %s\n" % line.encode(charset))
         try:
             parse = parser.parse(bofh, line)
-            result = parse.eval()
+            result = parse.eval(prompter=prompter)
             print result.encode(charset)
             if script_file is not None:
                 script_file.write(result.encode(charset))
