@@ -19,7 +19,7 @@
 # along with PyBofh; if not, write to the Free Software Foundation,
 # Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 
-import getpass, bofh, locale, bofh.readlineui
+import getpass, bofh.version, locale, bofh.readlineui
 
 encoding = locale.getpreferredencoding()
 user = getpass.getuser()
@@ -43,7 +43,7 @@ print (u"""This is PyBofh version %s
 Copyright (c) 2010 University of Oslo, Norway
 This is free software; see the source for copying conditions. There is NO
 warranty, not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.""" 
-% bofh.version).encode(
+% bofh.version.version).encode(
         locale.getpreferredencoding())
 conn = bofh.connect(user, getpass.getpass(), url)
 print conn.motd
