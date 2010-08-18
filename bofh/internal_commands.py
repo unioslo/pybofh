@@ -58,7 +58,16 @@ def source(bofh, ignore_errors=False, script=None):
 def script(bofh, file=None):
     """Open file, and set it as script file for reader"""
     from . import readlineui
-    readlineui = open(file, "wa")
+    if file:
+        readlineui.script_file = open(file, "wa")
+        return u"Copying output to %s" % file
+    else:
+        if readlineui.script_file:
+            ret = u"Closing current scriptfile, %s" % readlineui.script_file.name
+            readlineui.script_file.close()
+            readlineui.script_file = None
+            return ret
+        return "No scriptfile currently open"
 
 def quit(bofh):
     """Quit"""

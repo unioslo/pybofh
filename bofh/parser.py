@@ -262,7 +262,7 @@ def _parse_script(bofh, fullgrp, group, start, lex, line):
     args = []
     while True:
         try:
-            arg, idx = parse_string_or_list(lex)
+            arg, idx, _, _ = parse_string(lex)
             args.append((arg, idx))
         except IncompleteParse:
             # XXX: handle better
