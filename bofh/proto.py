@@ -168,7 +168,16 @@ class _Command(object):
             args = self.prompt_missing_args(promptfunc, *rest)
         else:
             args = rest
-        ret = self._bofh.run_command(self._fullname, *args)
+        try:
+            ret = self._bofh.run_command(self._fullname, *args)
+        except SessionExpiredError, e:
+            if not e.cont:
+                raise
+            pw = promptfunc(u"You need to reauthenticate\nPassword: ", None,
+                            u"Please type your password", None, 'accountPassword')
+            self._bofh.login(None, pw)
+            ret = e.cont()
+
         with_format = not ('with_format' in kw and not kw['with_format'])
         if with_format and not isinstance(ret, basestring):
             for i in args:
@@ -225,7 +234,15 @@ class _Command(object):
         #       prompt_func(prompt, newmap, help text, default)
         # 5. User's answer is handled by prompt func, append arg to rest and restart.
         args = list(rest)
-        result = self._bofh.call_prompt_func(self._fullname, *rest)
+        try:
+            result = self._bofh.call_prompt_func(self._fullname, *rest)
+        except SessionExpiredError, e:
+            if not e.cont:
+                raise
+            pw = prompt_func(u"You need to reauthenticate\nPassword: ", None,
+                             u"Please type your password", None, 'accountPassword')
+            self._bofh.login(None, pw)
+            result = e.cont()
         if result.get('prompt') is None and result.get('last_arg'):
             return args
         map = result.get('map')
@@ -287,12 +304,29 @@ class _CommandGroup(object):
     def get_bofh_command_value(self, key):
         return self._cmds.get(key)
 
+class BofhError(Exception):
+    """Exceptions from bofhd"""
+    def __init__(self, message, cont=None):
+        self.cont = cont
+        super(Exception, self).__init__(message)
+
+class SessionExpiredError(BofhError):
+    """Session has expired.
+    This should probably be handled like this:
+    try:
+       bofh.command()
+    except SessionExpiredError, e:
+       bofh.login(username, getpass()) # i.e. log in again to get new session
+       if e.cont:
+           e.cont()  # call method again
+    """
+
 class Bofh(object):
     def __init__(self, username, password, url, cert):
         self._connection = None
         self._groups = dict()
         self._connect(url, cert)
-        self._session = self._run_raw_command("login", username, password)
+        self.login(username, password)
         self._init_commands()
 
     def _connect(self, url, cert):
@@ -301,11 +335,43 @@ class Bofh(object):
 
     def _run_raw_command(self, name, *args):
         fn = getattr(self._connection, name)
-        return _washresponse(fn(*args))
+        try:
+            return _washresponse(fn(*args))
+        except _rpc.Fault, e:
+            epkg = 'Cerebrum.modules.bofhd.errors.'
+            if e.faultString.startswith(epkg + 'ServerRestartedError:'):
+                self._init_commands(reset=True)
+                return _washresponse(fn(*args))
+            elif e.faultString.startswith(epkg + 'SessionExpiredError:'):
+                # Should not happen, only in _run_raw_sess_command
+                pass
+            elif e.faultString.startswith(epkg):
+                if ':' in e.faultString:
+                    _, msg = e.faultString.split(':', 1)
+                    if msg.startswith("CerebrumError: "):
+                        _, msg = e.faultString.split(': ', 1)
+                    raise BofhError(msg)
+            raise
 
     def _run_raw_sess_command(self, name, *args):
         fn = getattr(self._connection, name)
-        return _washresponse(fn(self._session, *args))
+        try:
+            return _washresponse(fn(self._session, *args))
+        except _rpc.Fault, e:
+            epkg = 'Cerebrum.modules.bofhd.errors.'
+            if e.faultString.startswith(epkg + 'ServerRestartedError:'):
+                self._init_commands(reset=True)
+                return _washresponse(fn(*args))
+            elif e.faultString.startswith(epkg + 'SessionExpiredError:'):
+                raise SessionExpiredError(u"Session expired", 
+                                          lambda: _washresponse(fn(self._session, *args)))
+            elif e.faultString.startswith(epkg):
+                if ':' in e.faultString:
+                    _, msg = e.faultString.split(':', 1)
+                    if msg.startswith("CerebrumError: "):
+                        _, msg = e.faultString.split(': ', 1)
+                    raise BofhError(msg.decode("ISO-8859-1"))
+            raise
 
     # XXX: There are only a handfull of bofhd commands:
     # motd = get_motd(client_name, version)
@@ -330,7 +396,11 @@ class Bofh(object):
 
     def login(self, user, password):
         "Log in to server"
-        self._session = self._run_raw_command("login", username, password)
+        if user is None:
+            user = self._username
+        else:
+            self._username = user
+        self._session = self._run_raw_command("login", user, password)
 
     def logout(self):
         self._run_raw_sess_command("logout")
@@ -361,7 +431,7 @@ class Bofh(object):
     @property
     def motd(self):
         u"""Get message of the day from bofh server"""
-        return _washresponse(self._connection.get_motd(u"pybofh", version.version))
+        return _washresponse(self._connection.get_motd(u"PyBofh", version.version))
 
     def _init_commands(self, reset=False):
         #XXX: reset is set to true if server is restarted, and commands

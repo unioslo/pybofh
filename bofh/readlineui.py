@@ -22,7 +22,7 @@
 u"""Readline user interface for PyBofh"""
 
 import readline
-from . import parser
+from . import parser, proto
 
 class bofhcompleter(object):
     """Completer functor for bofh completion"""
@@ -124,6 +124,13 @@ def repl(bofh, charset=None):
                 script_file.write(u"\n".encode(charset))
         except SystemExit:
             raise
+        except proto.SessionExpiredError, e:
+            print "Session expired, you need to reauthenticate"
+            import getpass
+            pw = getpass.getpass()
+            bofh.login(None, pw)
+        except proto.BofhError, e:
+            print e.message.encode(charset)
         except:
             import traceback
             traceback.print_exc()
