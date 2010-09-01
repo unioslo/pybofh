@@ -176,7 +176,7 @@ def _parse_bofh_command(bofh, fullgrp, group, start, lex, line):
 
     ret.append(cmd, idx, fltrcmds)
     if solematch:
-        cmd_obj = getattr(grp, fltrcmds[0])
+        cmd_obj = getattr(grp, solematch)
         ret.set_command(cmd_obj)
         for expected in cmd_obj.args:
             try:
@@ -334,7 +334,7 @@ def parse(bofh, text):
         raise NoGroup(None, allcmds)
 
     if solematch:
-        fullgrp = fltrcmds[0]
+        fullgrp = solematch
     else:
         fullgrp = group
 
@@ -357,7 +357,7 @@ def parse_string(lex, expected=[]):
     0: Parsed string
     1: Index of parsed string
     2: list of matches
-    3: len(list of matches) == 1
+    3: A match for parsed string in expected
     Raises SynErr if read item is a paren"""
     try:
         val, idx = lex.next()
@@ -370,7 +370,13 @@ def parse_string(lex, expected=[]):
     if val in (u'(', u')'):
         raise SynErr("Expected string, got %s" % val, idx)
     expected = filter(lambda x: x.startswith(val), expected)
-    return val, idx, expected, len(expected) == 1
+    if len(expected) == 1:
+        solematch = expected[0]
+    elif val in expected:
+        solematch = val
+    else:
+        solematch = False
+    return val, idx, expected, solematch
 
 def parse_string_or_list(lex):
     """Get a string or list of strings from lexer"""
