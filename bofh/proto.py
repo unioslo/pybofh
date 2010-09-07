@@ -330,8 +330,10 @@ class Bofh(object):
         self._init_commands()
 
     def _connect(self, url, cert):
-        self._connection = _rpc.Server(url, transport=BofhTransport(cert, use_datetime=True), 
-                encoding="ISO-8859-1", use_datetime=True)
+        self._connection = _rpc.Server(
+                url, 
+                transport=BofhTransport(cert, use_datetime=True), 
+                use_datetime=True)
 
     def _run_raw_command(self, name, *args):
         fn = getattr(self._connection, name)
@@ -370,7 +372,7 @@ class Bofh(object):
                     _, msg = e.faultString.split(':', 1)
                     if msg.startswith("CerebrumError: "):
                         _, msg = e.faultString.split(': ', 1)
-                    raise BofhError(msg.decode("ISO-8859-1"))
+                    raise BofhError(msg)
             raise
 
     # XXX: There are only a handfull of bofhd commands:
