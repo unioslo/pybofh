@@ -18,10 +18,10 @@
 # along with PyBofh; if not, write to the Free Software Foundation,
 # Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 
-u"""This is the PyBofh command parser"""
+u"""The PyBofh command parser"""
 
 class SynErr(Exception):
-    u"""Syntax error"""
+    u"""Syntax error. Base class for syntax errors"""
     def __init__(self, msg, index=None):
         super(Exception, self).__init__(msg)
         self.index = index
@@ -40,15 +40,22 @@ class NoGroup(SynErr):
         self.completions = completions
 
 class Command(object):
+    """Base class for commands returned by :func:`parse`"""
     def __init__(self, bofh, line):
         self.args = []
         self.bofh = bofh
         self.line = line
 
     def append(self, arg, index, complete):
+        """Append a parsed argument.
+
+        :param arg: The found argument.
+        :param index: The starting point where arg was found, or -1 for missing
+        :param complete: an object to use by the completer"""
         self.args.append((arg, index, complete))
 
     def complete(self, start, end):
+        """Get completions for argument"""
         import sys
         arg = self.findarg(start, end)
         if isinstance(arg[2], list):
@@ -57,6 +64,7 @@ class Command(object):
             return arg[2](start, end, *arg)
 
     def findarg(self, start, end):
+        """Lookup an arg in the mentioned position"""
         for i in self.args:
             if i[1] == start:
                 return i
@@ -79,10 +87,17 @@ class Command(object):
 
 
 class BofhCommand(Command):
+    u"""A command object for a bofh command"""
     def set_command(self, command):
+        u"""Set the actual command
+
+        :param command: The command to set (returned from bofh object)
+        :type command: bofh.proto._Command
+        """
         self.command = command
 
     def get_args(self):
+        """Retrieve the parsed arguments as a list"""
         ret = []
         for arg, pos, _ in self.args[2:]:
             if pos == -1:
@@ -104,7 +119,9 @@ class BofhCommand(Command):
         return self.command(prompter=prompter, *args)
 
 class InternalCommand(Command):
+    """A command object for an internal command."""
     def eval(self, *rest, **kw):
+        """Find the command in :module:`bofh.internal_commands`, and call it"""
         from . import internal_commands as where
         cmdname = self.args[0][2][0]
         cmdref = getattr(where, cmdname)
@@ -112,7 +129,9 @@ class InternalCommand(Command):
         return cmdref(self.bofh, *args)
 
 class HelpCommand(InternalCommand):
+    """Help command"""
     def get_args(self):
+        """Get the args as a list of strings"""
         ret = []
         for arg, pos, _ in self.args[1:]:
             if pos == -1:
@@ -127,6 +146,7 @@ class HelpCommand(InternalCommand):
         return ret
 
     def eval(self, *rest, **kw):
+        """Call help in internal_commands"""
         from . import internal_commands as where
         cmdname = self.args[0][2][0]
         cmdref = getattr(where, cmdname)
@@ -134,6 +154,7 @@ class HelpCommand(InternalCommand):
         return cmdref(self.bofh, *args)
 
 class SingleCommand(InternalCommand):
+    """An internal command taking no args"""
     def __init__(self, bofh, fullcmd, cmd, index, line):
         super(InternalCommand, self).__init__(bofh, line)
         self.command = cmd
@@ -147,11 +168,13 @@ class SingleCommand(InternalCommand):
         return self.cmdref(self.bofh)
 
 class FileCompleter(object):
+    """Some of the commands takes file as a param. Complete this"""
     # XXX: Is this maybe standard in readline?
     def __call__(self, start, end, arg, argstart, completions):
         return [] # glob(arg + '*') or better
 
 class ArgCompleter(object):
+    """Try to complete some arguments"""
     def __init__(self, arg):
         self.arg = arg
 
@@ -159,14 +182,34 @@ class ArgCompleter(object):
         return [] # perhaps do something here based on arg type
 
 def _r(fname):
+    """Quick check if fname is the name of a readable file"""
     import os.path
     fname = os.path.realpath(fname)
     return os.path.exists(fname) and os.path.isfile(fname)
 
 def _parse_bofh_command(bofh, fullgrp, group, start, lex, line):
+    """Parse the rest of a bofh command.
+
+    :param bofh: The bofh object
+    :param fullgrp: The first part of the command
+    :type fullgrp: unicode
+    :param group: The part of fullgrp that is actually read
+    :type group: unicode
+    :param start: Index of the first char on the line
+    :type start: int
+    :param lex: Lexer from :func:`lexer`
+    :type lex: Generator
+    :param line: The line to parse
+    :type line: unicode
+    :returns: A new :class:`BofhCommand` object
+    :raises: SynErr
+    """
+    # Setup return object
     grp = getattr(bofh, fullgrp)
     ret = BofhCommand(bofh, line) # XXX: Args
     ret.append(group, start, [fullgrp])
+
+    # Find second half of the command
     allcmds = grp.get_bofh_command_keys()
     try:
         cmd, idx, fltrcmds, solematch = parse_string(lex, allcmds)
@@ -175,6 +218,8 @@ def _parse_bofh_command(bofh, fullgrp, group, start, lex, line):
         raise IncompleteParse(e.message, ret, e.completions)
 
     ret.append(cmd, idx, fltrcmds)
+
+    # found, parse arguments
     if solematch:
         cmd_obj = getattr(grp, solematch)
         ret.set_command(cmd_obj)
@@ -200,6 +245,7 @@ def _parse_bofh_command(bofh, fullgrp, group, start, lex, line):
     return ret
 
 def _parse_help(bofh, fullgrp, group, start, lex, line):
+    """Parse the help command"""
     ret = HelpCommand(bofh, line)
     ret.append(group, start, [fullgrp])
     args = []
@@ -257,6 +303,7 @@ def _parse_help(bofh, fullgrp, group, start, lex, line):
     return ret
 
 def _parse_script(bofh, fullgrp, group, start, lex, line):
+    """Parse script internal command"""
     ret = InternalCommand(bofh, line)
     ret.append(group, start, [fullgrp])
     args = []
@@ -279,6 +326,7 @@ def _parse_script(bofh, fullgrp, group, start, lex, line):
     return ret
 
 def _parse_source(bofh, fullgrp, group, start, lex, line):
+    """Parse source internal command"""
     ret = InternalCommand(bofh, line)
     ret.append(group, start, [fullgrp])
     args = []
@@ -312,8 +360,10 @@ def _parse_source(bofh, fullgrp, group, start, lex, line):
     return ret
 
 def _parse_single(bofh, fullgrp, group, start, lex, line):
+    """Parse an internal command taking no args"""
     return SingleCommand(bofh, fullgrp, group, start, line)
 
+# table of internal commands, see also internal_commands.py
 _internal_cmds = {
         u'help': _parse_help,
         u'source': _parse_source,

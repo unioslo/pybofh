@@ -19,6 +19,18 @@
 # along with PyBofh; if not, write to the Free Software Foundation,
 # Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 
+u"""The PyBofh package
+
+Normally, you should get a bofh object by calling ``obj = connect(user, pass)``,
+and play with this.
+
+>>> obj = connect('user', 'pass')
+>>> obj.motd
+Message of the day
+>>> obj.user.info('user')
+Username: user
+...
+"""
 
 __all__ = ['internal_commands', 'parser', 'proto', 'readlineui',
         'version', 'get_default_url', 'get_default_cert', 'connect']
@@ -26,12 +38,24 @@ import xmlrpclib as _rpc
 from . import proto
 
 def get_default_url():
+    """Get default url for connecting to bofh"""
+    #XXX This should be configurable
     return "https://cerebrum-uio.uio.no:8000"
 
 def get_default_cert():
+    """Get default certificate"""
+    #XXX: Implement cert checking, and make this configurable
     return {}
 
 def connect(username, password, url=None, cert=None):
-    """Return a new Bofh() object."""
+    u"""Connect to the bofh server, log in, and return a bofh object
+
+    :param username: Your username
+    :param password: Your password
+    :url: None for default url, or some https url
+    :cert: None for default cert, or some cert
+    :return: New bofh communication object
+    :rtype: bofh.proto.Bofh
+    """
     return proto.Bofh(username, password, url or get_default_url(), cert or get_default_cert())
 

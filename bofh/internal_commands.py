@@ -18,8 +18,16 @@
 # along with PyBofh; if not, write to the Free Software Foundation,
 # Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 
+u"""This is the implementation of commands internal to the bofh client.
+
+Typically these functions would be called through 
+the eval (:meth:`bofh.parser.Command.eval`) method of the object
+returned from :func:`bofh.parser.parse`.
+"""
+
 from __future__ import with_statement
 
+# Helptexts for the help() function
 _helptexts = {
         u'help': u"help | help command | help command1 command2 -- Get help",
         u'source': u"source [--ignore-errors] file -- Read commands from file",
@@ -29,6 +37,19 @@ _helptexts = {
         }
 
 def help(bofh, *args):
+    """The help command.
+
+    Different uses:
+
+    * ``help``: Return bofh.help()
+    * ``help internal_command``: Returns a help text for internal command.
+    * ``help group``: Returns bofh.help('group')
+    * ``help group cmd``: Returns bofh.help('group', 'cmd')
+
+    :param bofh: The bofh communicator
+    :type bofh: bofh.proto.Bofh.
+    :param args: command to look up.
+    :returns: The help for the args"""
     if not args:
         return bofh.help()
     if len(args) == 1:
@@ -41,7 +62,15 @@ def help(bofh, *args):
     return bofh.help(*args)
 
 def source(bofh, ignore_errors=False, script=None):
-    """Read lines from file, parse, and execute each line"""
+    """Read lines from file, parse, and execute each line.
+
+    Empty lines and line starting with # is ignored.
+
+    :param bofh: The bofh communicator
+    :type bofh: bofh.proto.Bofh
+    :param ignore_errors: Do not propagate an exception, but continue.
+    :param script: The script fie to execute.
+    """
     from .parser import parse
     with open(script) as src:
         for line in src:
@@ -56,7 +85,12 @@ def source(bofh, ignore_errors=False, script=None):
                     raise
 
 def script(bofh, file=None):
-    """Open file, and set it as script file for reader"""
+    """Open file, and set it as log file for reader
+
+    :param bofh: The bofh communicator
+    :type bofh: bofh.proto.Bofh
+    :param file:
+    """
     from . import readlineui
     if file:
         readlineui.script_file = open(file, "wa")
@@ -70,11 +104,22 @@ def script(bofh, file=None):
         return "No scriptfile currently open"
 
 def quit(bofh):
-    """Quit"""
+    """Quit the programme
+
+    :param bofh: The bofh communicator
+    :type bofh: bofh.proto.Bofh
+    :raises: SystemExit (always)
+    """
     import sys
     sys.exit(0)
 
 def commands(bofh):
+    """List the commands available in bofh
+
+    :param bofh: The bofh communicator
+    :type bofh: bofh.proto.Bofh
+    :returns: A prettyprinted list of commands from bofh with args
+    """
     ret = []
     wide = 0
     for grpname in sorted(bofh.get_bofh_command_keys()):
