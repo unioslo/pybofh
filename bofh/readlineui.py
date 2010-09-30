@@ -191,9 +191,9 @@ def repl(bofh, charset=None):
     readline.set_completer(bofhcompleter(bofh, charset))
     while True:
         # read input
-        line = raw_input(u"pybofh >>> ".encode(charset)).decode(charset)
+        line = raw_input(u"bofh>>> ".encode(charset)).decode(charset)
         if script_file is not None:
-            script_file.write("pybofh >>> %s\n" % line.encode(charset))
+            script_file.write("bofh>>> %s\n" % line.encode(charset))
         try:
             # eval
             parse = parser.parse(bofh, line)

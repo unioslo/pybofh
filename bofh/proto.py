@@ -204,7 +204,7 @@ class _Command(object):
         except SessionExpiredError, e:
             if not e.cont:
                 raise
-            pw = promptfunc(u"You need to reauthenticate\nPassword: ", None,
+            pw = promptfunc(u"You need to reauthenticate\nPassword:", None,
                             u"Please type your password", None, 'accountPassword')
             self._bofh.login(None, pw)
             ret = e.cont()
@@ -271,7 +271,7 @@ class _Command(object):
         except SessionExpiredError, e:
             if not e.cont:
                 raise
-            pw = prompt_func(u"You need to reauthenticate\nPassword: ", None,
+            pw = prompt_func(u"You need to reauthenticate\nPassword:", None,
                              u"Please type your password", None, 'accountPassword')
             self._bofh.login(None, pw)
             result = e.cont()
