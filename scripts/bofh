@@ -19,23 +19,22 @@
 # along with PyBofh; if not, write to the Free Software Foundation,
 # Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 
-import getpass, bofh.version, locale, bofh.readlineui
+import getpass, bofh.version, locale, bofh.readlineui, sys
 
 encoding = locale.getpreferredencoding()
 user = getpass.getuser()
 url = bofh.get_default_url()
 
 try:
-    import argparse, sys
+    import argparse
     argp = argparse.ArgumentParser(description=u"The Cerebrum Bofh client")
-    argp.add_argument('-u', '--user', default=getpass.getuser(), help=u"user name")
-    argp.add_argument('--url', default=bofh.get_default_url(), help=u"URL")
+    argp.add_argument('-u', '--user', default=user, help=u"user name")
+    argp.add_argument('--url', default=url, help=u"URL")
     parse = argp.parse_args()
     user, url = parse.user, parse.url
 except ImportError:
-    import sys
     if sys.argv[1:]:
-        print u"Argparse module needed"
+        print u"Argparse module needed: http://code.google.com/p/argparse/"
         sys.exit(1)
 
 print (u"""This is PyBofh version %s
