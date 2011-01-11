@@ -26,6 +26,11 @@ class SynErr(Exception):
         super(SynErr, self).__init__(msg)
         self.index = index
 
+    def __unicode__(self):
+        if self.index is None:
+            return u"Syntax error"
+        return u"Syntax error at %s" % self.index
+
 class IncompleteParse(SynErr):
     u"""Parser ran off end without finding matching " or )"""
     def __init__(self, msg, parse, expected):

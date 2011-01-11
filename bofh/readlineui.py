@@ -191,7 +191,11 @@ def repl(bofh, charset=None):
     readline.set_completer(bofhcompleter(bofh, charset))
     while True:
         # read input
-        line = raw_input(u"bofh>>> ".encode(charset)).decode(charset)
+        try:
+            line = raw_input(u"bofh>>> ".encode(charset)).decode(charset)
+        except EOFError:
+            print "Good bye, and thanks for all the fish!"
+            return
         if script_file is not None:
             script_file.write("bofh>>> %s\n" % line.encode(charset))
         try:
@@ -216,10 +220,12 @@ def repl(bofh, charset=None):
         except proto.BofhError, e:
             # Error from the bofh server
             print e.message.encode(charset)
+        except EOFError: # Sent from prompt func. Just ask for new command
+            print
+        except parser.SynErr, e:
+            print unicode(e).encode(charset)
         except:
             # Unknown exception, handle this
-            # XXX: Handle EOFError, raised by raw_input, both above,
-            # and in prompter().
             # XXX: Handle parse errors
             import traceback
             traceback.print_exc()
