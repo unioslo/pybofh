@@ -23,19 +23,20 @@ u"""The PyBofh command parser"""
 class SynErr(Exception):
     u"""Syntax error. Base class for syntax errors"""
     def __init__(self, msg, index=None):
-        super(Exception, self).__init__(msg)
+        super(SynErr, self).__init__(msg)
         self.index = index
 
 class IncompleteParse(SynErr):
     u"""Parser ran off end without finding matching " or )"""
     def __init__(self, msg, parse, expected):
-        super(SynErr, self).__init__(msg, -1)
+        super(IncompleteParse, self).__init__(msg, -1)
         self.parse = parse
         self.completions = expected
 
 class NoGroup(SynErr):
     u"""The group didn't match any defined command"""
     def __init__(self, parse, completions):
+        super(NoGroup, self).__init__(u"No matching command", 0)
         self.parse = parse
         self.completions = completions
 
@@ -156,7 +157,7 @@ class HelpCommand(InternalCommand):
 class SingleCommand(InternalCommand):
     """An internal command taking no args"""
     def __init__(self, bofh, fullcmd, cmd, index, line):
-        super(InternalCommand, self).__init__(bofh, line)
+        super(SingleCommand, self).__init__(bofh, line)
         self.command = cmd
         self.index = index
         self.args = [(cmd, index, [fullcmd])]

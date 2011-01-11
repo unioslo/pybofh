@@ -343,7 +343,7 @@ class BofhError(Exception):
     """Exceptions from bofhd"""
     def __init__(self, message, cont=None):
         self.cont = cont
-        super(Exception, self).__init__(message)
+        super(BofhError, self).__init__(message)
 
 class SessionExpiredError(BofhError):
     """Session has expired.
