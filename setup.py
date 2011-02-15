@@ -54,7 +54,8 @@ def archive_version():
     for tag in ar.tag:
         if tag.startswith('version-'):
             return tag.split('-', 1)[1]
-    return ar.node
+    if ar.node:
+        return ar.node[:12]
 
 def hg_version():
     import os
@@ -66,7 +67,7 @@ def hg_version():
     for tag in ctx.tags():
         if tag.startswith('version-'):
             return tag.split('-', 1)[1]
-    return ctx.hex()
+    return ctx.hex()[:12]
 
 def bofh_version():
     from bofh.version import version
