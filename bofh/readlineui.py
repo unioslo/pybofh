@@ -194,7 +194,7 @@ def repl(bofh, charset=None):
         try:
             line = raw_input(u"bofh>>> ".encode(charset)).decode(charset)
         except EOFError:
-            print "Good bye, and thanks for all the fish!"
+            print "So long, and thanks for all the fish!"
             return
         if script_file is not None:
             script_file.write("bofh>>> %s\n" % line.encode(charset))
