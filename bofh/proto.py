@@ -401,23 +401,25 @@ class Bofh(object):
     def _run_raw_sess_command(self, name, *args):
         """Run a command on the server, supply the session id as first param"""
         fn = getattr(self._connection, name)
-        try:
-            return _washresponse(fn(self._session, *args))
-        except _rpc.Fault, e:
-            epkg = 'Cerebrum.modules.bofhd.errors.'
-            if e.faultString.startswith(epkg + 'ServerRestartedError:'):
-                self._init_commands(reset=True)
-                return _washresponse(fn(*args))
-            elif e.faultString.startswith(epkg + 'SessionExpiredError:'):
-                raise SessionExpiredError(u"Session expired", 
-                                          lambda: _washresponse(fn(self._session, *args)))
-            elif e.faultString.startswith(epkg):
-                if ':' in e.faultString:
-                    _, msg = e.faultString.split(':', 1)
-                    if msg.startswith("CerebrumError: "):
-                        _, msg = e.faultString.split(': ', 1)
-                    raise BofhError(msg)
-            raise
+        def run_command():
+            try:
+                return _washresponse(fn(self._session, *args))
+            except _rpc.Fault, e:
+                epkg = 'Cerebrum.modules.bofhd.errors.'
+                if e.faultString.startswith(epkg + 'ServerRestartedError:'):
+                    self._init_commands(reset=True)
+                    return _washresponse(fn(*args))
+                elif e.faultString.startswith(epkg + 'SessionExpiredError:'):
+                    raise SessionExpiredError(u"Session expired", 
+                                              run_command)
+                elif e.faultString.startswith(epkg):
+                    if ':' in e.faultString:
+                        _, msg = e.faultString.split(':', 1)
+                        if msg.startswith("CerebrumError: "):
+                            _, msg = e.faultString.split(': ', 1)
+                        raise BofhError(msg)
+                raise
+        return run_command()
 
     # XXX: There are only a handfull of bofhd commands:
     # motd = get_motd(client_name, version)
