@@ -219,7 +219,7 @@ def repl(bofh, charset=None):
             bofh.login(None, pw)
         except proto.BofhError, e:
             # Error from the bofh server
-            print e.message.encode(charset)
+            print e.args[0].encode(charset)
         except EOFError: # Sent from prompt func. Just ask for new command
             print
         except parser.SynErr, e:

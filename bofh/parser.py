@@ -221,7 +221,7 @@ def _parse_bofh_command(bofh, fullgrp, group, start, lex, line):
         cmd, idx, fltrcmds, solematch = parse_string(lex, allcmds)
     except IncompleteParse, e:
         ret.append(u"", -1, allcmds)
-        raise IncompleteParse(e.message, ret, e.completions)
+        raise IncompleteParse(e.args[0], ret, e.completions)
 
     ret.append(cmd, idx, fltrcmds)
 
@@ -247,7 +247,7 @@ def _parse_bofh_command(bofh, fullgrp, group, start, lex, line):
             if e.parse:
                 arg, idx = parse_string_or_list(lex)
                 ret.append(arg, idx, ArgCompleter(expected))
-                raise IncompleteParse(e.message, ret, e.completions) 
+                raise IncompleteParse(e.args[0], ret, e.completions) 
     return ret
 
 def _parse_help(bofh, fullgrp, group, start, lex, line):
