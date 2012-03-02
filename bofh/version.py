@@ -20,5 +20,5 @@
 # Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 
 
-version = u"0.4"
+version = u"0.5"
 
