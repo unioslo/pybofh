@@ -264,7 +264,8 @@ class _Command(object):
         #              (i if raw else map[i][1], map[i][0][0] % map[i][0][1]), ...]
         # 4. prompt using string, and, if set, [default], i.e. 
         #       prompt_func(prompt, newmap, help text, default)
-        # 5. User's answer is handled by prompt func, append arg to rest and restart.
+        # 5. if last_arg is true, return args with appended ans.
+        # 6. User's answer is handled by prompt func, append arg to rest and restart.
         args = list(rest)
         try:
             result = self._bofh.call_prompt_func(self._fullname, *rest)
@@ -298,6 +299,8 @@ class _Command(object):
                               result.get('default'))
         # Yes, I have done some functional programming lately
         # It's another way of creating a loop
+        if result.get('last_arg'):
+            return args + [ans]
         return self._prompt_func(prompt_func, *(args + [ans]))
 
     @property
