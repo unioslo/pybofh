@@ -25,11 +25,12 @@ class SynErr(Exception):
     def __init__(self, msg, index=None):
         super(SynErr, self).__init__(msg)
         self.index = index
+        self.msg = msg
 
     def __unicode__(self):
         if self.index is None:
             return u"Syntax error"
-        return u"Syntax error at %s" % self.index
+        return u"Syntax error at col %s: %s" % (self.index, self.msg)
 
 class IncompleteParse(SynErr):
     u"""Parser ran off end without finding matching " or )"""
@@ -62,7 +63,6 @@ class Command(object):
 
     def complete(self, start, end):
         """Get completions for argument"""
-        import sys
         arg = self.findarg(start, end)
         if isinstance(arg[2], list):
             return arg[2]
@@ -122,7 +122,10 @@ class BofhCommand(Command):
         prompter: Callable to get single input item
         """
         args = self.get_args()
-        return self.command(prompter=prompter, *args)
+        try:
+            return self.command(prompter=prompter, *args)
+        except AttributeError:
+            raise NoGroup(None, args)
 
 class InternalCommand(Command):
     """A command object for an internal command."""
@@ -170,7 +173,6 @@ class SingleCommand(InternalCommand):
         self.cmdref = getattr(where, fullcmd)
 
     def eval(self, *rest, **kw):
-        from . import internal_commands as where
         return self.cmdref(self.bofh)
 
 class FileCompleter(object):

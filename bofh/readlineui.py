@@ -170,7 +170,7 @@ def prompter(prompt, mapping, help, default, argtype=None, optional=False):
             else:
                 return val
 
-def repl(bofh, charset=None):
+def repl(bofh, charset=None, prompt=None):
     u"""Read Eval Print Loop
 
     The function of this is to
@@ -182,9 +182,15 @@ def repl(bofh, charset=None):
 
     :param bofh: The bofh object
     :param charset: The charset for raw_input, or None to find from system
+    :param prompt: User defined prompt, if specified
     :raises: SystemExit
     """
-    import sys, locale
+    if not prompt:
+        prompt = u"bofh>>> "
+    else:
+        prompt = prompt.decode('string_escape')
+    
+    import locale
     if charset == None:
         charset = locale.getpreferredencoding()
     readline.parse_and_bind("tab: complete")
@@ -192,12 +198,15 @@ def repl(bofh, charset=None):
     while True:
         # read input
         try:
-            line = raw_input(u"bofh>>> ".encode(charset)).decode(charset)
+            line = raw_input(prompt.encode(charset)).decode(charset)
+            # If we get a blank line, we just continue
+            if not line:
+                continue
         except EOFError:
             print "So long, and thanks for all the fish!"
             return
         if script_file is not None:
-            script_file.write("bofh>>> %s\n" % line.encode(charset))
+            script_file.write("%s %s\n" % (prompt, line.encode(charset)))
         try:
             # eval
             parse = parser.parse(bofh, line)
