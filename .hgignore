@@ -1,6 +1,0 @@
-~$
-\.py(c|o)$
-^build/.*
-^doc/\.build/.*
-^dist/.*
-^MANIFEST$

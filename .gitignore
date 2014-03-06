@@ -1,2 +1,9 @@
 *.pyc
 build/
+.hgignore
+~$
+\.py(c|o)$
+^build/.*
+^doc/\.build/.*
+^dist/.*
+^MANIFEST$
