@@ -139,6 +139,10 @@ def prompter(prompt, mapping, help, default, argtype=None, optional=False):
             print mapstr
         # get input from user
         val = inputfunc(_prompt).strip().encode(locale.getpreferredencoding())
+        # Lines read at this stage, are params to a command.
+        # We remove them from the history.
+        rlh_to_delete = readline.get_current_history_length()
+        readline.remove_history_item(rlh_to_delete-1)
 
         # only let empty value pass if default or optional
         if not val and not default:
