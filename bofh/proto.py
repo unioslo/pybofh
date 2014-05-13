@@ -87,6 +87,13 @@ def parse_format_suggestion(bofh_response, format_sugg):
             return u"<not set>"
         return val
 
+    # Handle missing format_suggestion
+    if not format_sugg:
+        if isinstance(bofh_response, basestring):
+            return bofh_response
+        else:
+            return repr(bofh_response)
+
     lst = []
     if "hdr" in format_sugg:
         lst.append(format_sugg["hdr"])
@@ -210,11 +217,12 @@ class _Command(object):
             ret = e.cont()
 
         with_format = not ('with_format' in kw and not kw['with_format'])
+
         if with_format and not isinstance(ret, basestring):
             for i in args:
                 if isinstance(i, (list, tuple)):
                     return u'\n'.join(
-                            map(lambda x: parse_format_suggestion(x, self.format_suggestion), 
+                            map(lambda x: parse_format_suggestion(x, self.format_suggestion),
                                 ret))
             return parse_format_suggestion(ret, self.format_suggestion)
         return ret
