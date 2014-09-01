@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright 2010 University of Oslo, Norway
+# Copyright 2010, 2014 University of Oslo, Norway
 #
 # This file is part of PyBofh.
 #
@@ -23,44 +23,56 @@ import getpass
 import locale
 import sys
 
-import bofh
-from bofh import version, readlineui, proto
+import bofh.readlineui
+import bofh.version
+import bofh.proto
 
 encoding = locale.getpreferredencoding()
-user = getpass.getuser()
-url = bofh.get_default_url()
-prompt = ''
 
 try:
     import argparse
-    argp = argparse.ArgumentParser(description=u"The Cerebrum Bofh client")
-    argp.add_argument('-u', '--user', default=user, help=u"user name")
-    argp.add_argument('--url', default=url, help=u"URL")
-    argp.add_argument('--prompt', default=prompt, help=u"Custom prompt")
-    parse = argp.parse_args()
-    user, url, prompt = parse.user, parse.url, parse.prompt
 except ImportError:
-    if sys.argv[1:]:
-        print u"Argparse module needed: http://code.google.com/p/argparse/"
-        sys.exit(1)
+    from bofh.ext import argparse
+
+argp = argparse.ArgumentParser(description=u"The Cerebrum Bofh client")
+argp.add_argument('-u', '--user',
+                  default=getpass.getuser(),
+                  metavar='UNAME',
+                  help=u"username")
+argp.add_argument('--url',
+                  default=bofh.get_default_url(),
+                  metavar='URL',
+                  help=u"URL of a bofhd server")
+argp.add_argument('-c', '--cert',
+                  default=None,
+                  metavar='CERT',
+                  help=u"CA certificate")
+argp.add_argument('-p', '--prompt',
+                  default='',
+                  metavar='PROMPT',
+                  help=u"Custom prompt")
+args = argp.parse_args()
 
 print (u"""This is PyBofh version %s
 
-Copyright (c) 2010 University of Oslo, Norway
+Copyright (c) 2010, 2014 University of Oslo, Norway
 This is free software; see the source for copying conditions. There is NO
-warranty, not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.""" 
-% bofh.version.version).encode(
-        locale.getpreferredencoding())
+warranty, not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE."""
+       % bofh.version.version).encode(locale.getpreferredencoding())
 
 try:
-    conn = bofh.connect(user, getpass.getpass(), url)
+    conn = bofh.connect(args.user,
+                        getpass.getpass(),
+                        url=args.url,
+                        cert=args.cert)
 except bofh.proto.BofhError, e:
     print e.args[0]
     sys.exit(1)
 
 print conn.motd
 try:
-    bofh.readlineui.repl(conn, prompt=prompt)
-except:
+    bofh.readlineui.repl(conn, prompt=args.prompt)
+except Exception, e:
+    print 'Error: %s' % str(e)
+finally:
     conn.logout()
-

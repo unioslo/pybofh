@@ -33,19 +33,21 @@ Username: user
 """
 
 __all__ = ['internal_commands', 'parser', 'proto', 'readlineui',
-        'version', 'get_default_url', 'get_default_cert', 'connect']
+           'version', 'get_default_url', 'get_default_cert', 'connect']
 import xmlrpclib as _rpc
+import sys
+import os.path
 from . import proto
 
 def get_default_url():
     """Get default url for connecting to bofh"""
-    #XXX This should be configurable
+    # TODO: This should be configurable
     return "https://cerebrum-uio.uio.no:8000"
 
 def get_default_cert():
     """Get default certificate"""
-    #XXX: Implement cert checking, and make this configurable
-    return {}
+    # TODO: Should this be configurable? It depends on setup.py
+    return os.path.join(sys.prefix, 'etc/pybofh/ca.pem')
 
 def connect(username, password, url=None, cert=None):
     u"""Connect to the bofh server, log in, and return a bofh object
@@ -56,6 +58,9 @@ def connect(username, password, url=None, cert=None):
     :cert: None for default cert, or some cert
     :return: New bofh communication object
     :rtype: bofh.proto.Bofh
-    """
-    return proto.Bofh(username, password, url or get_default_url(), cert or get_default_cert())
 
+    """
+    return proto.Bofh(username,
+                      password,
+                      url or get_default_url(),
+                      cert or get_default_cert())

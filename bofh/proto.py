@@ -18,35 +18,54 @@
 # You should have received a copy of the GNU General Public License
 # along with PyBofh; if not, write to the Free Software Foundation,
 # Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
-
-u"""Module to communicate with bofh server..
-"""
+u"""Module to communicate with bofh server."""
 
 import xmlrpclib as _rpc
 from . import version
 
+
 class BofhTransport(_rpc.SafeTransport):
     """A transport object"""
     def __init__(self, cert, *rest, **kw):
+        self._cert = cert
         _rpc.SafeTransport.__init__(self, *rest, **kw)
-        # XXX: do our own cert checking
+
+    def make_connection(self, host):
+        """Override the default connection."""
+        from .https import get_https, get_httpsconn
+
+        # Only newer versions of xmlrpclib
+        if self._connection and host == self._connection[0]:
+            return self._connection[1]
+
+        # Note that older versions of xmlrpclib expects a httplib.HTTPS-like
+        # object from make_connection. In those cases we should do:
+        #     HTTPS = get_https(ca_file=self._cert)
+        #     host, extra_headers, x509 = self.get_host_info(host)
+        #     return HTTPS(host, None, **(x509 or {}))
+        HTTPS = get_httpsconn(ca_file=self._cert)
+        chost, self._extra_headers, x509 = self.get_host_info(host)
+        self._connection = host, HTTPS(chost, None, **(x509 or {}))
+        return self._connection[1]
+
 
 def _sdt2strftime(format):
     """Simple thing to convert java's simple date format to strftime"""
-    reps = (#subst  with
-            (u"yyyy", u"%Y"),
+    #       (subst, with),
+    reps = ((u"yyyy", u"%Y"),
             (u"MM", u"%m"),
             (u"dd", u"%d"),
             (u"HH", u"%H"),
             (u"mm", u"%M"))
     return reduce(lambda form, rep: form.replace(*rep), reps, format)
 
+
 def _washresponse(resp):
     """Wash response
     Walk down any objects in response (we can get strings, dicts and lists),
     and make sure any strings are unicode. Also, we code None as ':None',
     and escapes other colon at start of string with an extra colon
-    
+
     >>> _washresponse(":None")
     >>> _washresponse("::None")
     u':None'
@@ -65,6 +84,7 @@ def _washresponse(resp):
         return resp
     else:
         return resp
+
 
 def parse_format_suggestion(bofh_response, format_sugg):
     """Transform a response from bofh to a string after
@@ -124,6 +144,7 @@ def parse_format_suggestion(bofh_response, format_sugg):
                 lst.append(format % positions)
     return u"\n".join(lst)
 
+
 class _Argument(object):
     """Bofh command parameter specifier"""
     def __init__(self, bofh, map):
@@ -150,6 +171,7 @@ class _Argument(object):
                 u", ".join(map(lambda x: x + u": %(" +x + u")s", stuff)) + 
                 u"}") % self.__dict__
 
+
 class _PromptFunc(object):
     """Parameter specifier for prompt_func args"""
     def __init__(self, bofh):
@@ -164,6 +186,7 @@ class _PromptFunc(object):
 
     def __unicode__(self):
         return u"prompt_func"
+
 
 #XXX: make a metaclass for commands
 class _Command(object):
@@ -241,12 +264,12 @@ class _Command(object):
             if has_prompted or not args[i].optional:
                 has_prompted = True
                 arglst = rest + ret
-                ans = prompt_func(args[i].prompt, 
-                                       None, 
-                                       args[i].help,
-                                       self.get_default_param(i, arglst),
-                                       args[i].type,
-                                       args[i].optional)
+                ans = prompt_func(args[i].prompt,
+                                  None, 
+                                  args[i].help,
+                                  self.get_default_param(i, arglst),
+                                  args[i].type,
+                                  args[i].optional)
                 if not ans and args[i].optional:
                     return arglst
                 ret.append(ans)
@@ -331,6 +354,7 @@ class _Command(object):
         ret = self._fixed_args = map(lambda x: _Argument(self._bofh, x), self._args)
         return ret
 
+
 class _CommandGroup(object):
     """A command group is the first half of a bofh command"""
     def __init__(self, bofh, name):
@@ -350,11 +374,13 @@ class _CommandGroup(object):
     def get_bofh_command_value(self, key):
         return self._cmds.get(key)
 
+
 class BofhError(Exception):
     """Exceptions from bofhd"""
     def __init__(self, message, cont=None):
         self.cont = cont
         super(BofhError, self).__init__(message)
+
 
 class SessionExpiredError(BofhError):
     """Session has expired.
@@ -367,6 +393,7 @@ class SessionExpiredError(BofhError):
            e.cont()  # call method again
     """
 
+
 class Bofh(object):
     """A bofh communication object.
 
@@ -378,15 +405,19 @@ class Bofh(object):
         self._connection = None
         self._groups = dict()
         self._connect(url, cert)
+        # TODO Should this be split up and done in the bofh script?
+        #      We might want to let the user abort if e.g. connection is not
+        #      https
         self.login(username, password)
         self._init_commands()
 
     def _connect(self, url, cert):
         """Establish a connection with the bofh server"""
+        # TODO: If http, warn and use _rpc.Transport for transport
         self._connection = _rpc.Server(
-                url, 
-                transport=BofhTransport(cert, use_datetime=True), 
-                use_datetime=True)
+            url,
+            transport=BofhTransport(cert, use_datetime=True),
+            use_datetime=True)
 
     def _run_raw_command(self, name, *args):
         """Run a command on the server"""
@@ -505,7 +536,7 @@ class Bofh(object):
         Then a set of objects are built, so that a command as 'user info foo'
         can be called as bofh.user.info(u'foo')
         """
-        #XXX: reset is set to true if server is restarted, and commands
+        # XXX: reset is set to true if server is restarted, and commands
         # might have changed. It should mean: delete commands not in response
         cmds = self._connection.get_commands(self._session)
         for key, value in cmds.items():
@@ -530,4 +561,3 @@ class Bofh(object):
     def get_bofh_command_value(self, key):
         u"""Lookup group key"""
         return self._groups.get(key)
-
