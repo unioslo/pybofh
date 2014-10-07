@@ -444,7 +444,7 @@ class Bofh(object):
         argslist = list(args)
         pos = 0
         for arg in argslist:
-            if arg.startswith(':'):
+            if isinstance(arg, basestring) and arg.startswith(':'):
                 argslist[pos] = ':' + arg
             pos += 1
         return tuple(argslist)
