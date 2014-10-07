@@ -439,8 +439,8 @@ class Bofh(object):
         return run_command()
 
     def format_args(self, args):
-        u"""Add additional ':' if an argument starts with ':', as this will get
-        sliced off by xmlutils.py in backend."""
+        u"""Add additional ':' if an argument is a basestring and starts with 
+        ':', as this will get sliced off by xmlutils.py in backend."""
         argslist = list(args)
         pos = 0
         for arg in argslist:
