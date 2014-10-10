@@ -77,19 +77,29 @@ def source(bofh, ignore_errors=False, script=None):
         return 'Source file not given or does not exist.'
 
     ret = []
+    line_no = 0
 
     from .parser import parse
     with open(script) as src:
         for line in src:
+            line_no += 1
             stripped = line.strip()
             if not stripped or stripped.startswith('#'):
                 continue
             try:
                 parsed = parse(bofh, line)
                 ret.append(parsed.eval())
-            except:
+            except BaseException, e:
                 if not ignore_errors:
-                    raise
+                    ret.append('Error: %s' % str(e))
+                    ret.append('Sourcing of %s aborted on line %d' % (script,
+                                                                      line_no))
+                    ret.append(
+                        'Hint: Use \'source --ignore-errors file\' to '
+                        'ignore errors')
+                    return ret
+                ret.append('Error: %s (on line %d)' % (str(e), line_no))
+
     return ret
 
 
