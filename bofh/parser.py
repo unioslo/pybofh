@@ -333,6 +333,7 @@ def _parse_script(bofh, fullgrp, group, start, lex, line):
         ret.append(None, -1, FileCompleter())
     return ret
 
+
 def _parse_source(bofh, fullgrp, group, start, lex, line):
     """Parse source internal command"""
     ret = InternalCommand(bofh, line)
@@ -349,7 +350,7 @@ def _parse_source(bofh, fullgrp, group, start, lex, line):
         ret.append(None, -1, FileCompleter())
     elif len(args) == 1:
         # XXX: Have a filecompleter that also expands --ignore-errors?
-        if u'--ignore-errors'.startswith(args[0]):
+        if u'--ignore-errors'.startswith(args[0][0]):
             ret.append(args[0][0], args[0][1], [u'--ignore-errors'])
         elif _r(args[0][0]):
             ret.append(None, None, [])
@@ -361,11 +362,13 @@ def _parse_source(bofh, fullgrp, group, start, lex, line):
         if u'--ignore-errors'.startswith(args[0][0]):
             ret.append(args[0][0], idx, [u'--ignore-errors'])
         else:
-            raise SynErr(u"Expected --ignore-errors, found %s" % args[0][0], args[0][1])
+            raise SynErr(u"Expected --ignore-errors, found %s" %
+                         args[0][0], args[0][1])
         ret.append(arg, idx, FileCompleter())
     else:
         raise SynErr(u"Too many arguments for source", args[2][1])
     return ret
+
 
 def _parse_single(bofh, fullgrp, group, start, lex, line):
     """Parse an internal command taking no args"""
