@@ -24,7 +24,7 @@ import locale
 import sys
 
 import bofh
-from bofh import readlineui
+import bofh.readlineui
 
 encoding = locale.getpreferredencoding()
 user = getpass.getuser()
@@ -68,6 +68,6 @@ except bofh.proto.BofhError, e:
 
 print conn.motd
 try:
-    readlineui.repl(conn, prompt=prompt)
+    bofh.readlineui.repl(conn, prompt=prompt)
 except:
     conn.logout()
