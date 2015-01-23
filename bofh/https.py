@@ -99,7 +99,12 @@ try:
             timeout = getattr(self, 'timeout', DEFAULT_TIMEOUT)
 
             makesock = getattr(socket, 'create_connection', _create_connection)
-            sock = makesock((self.host, self.port), timeout, source_addr)
+            if source_addr:
+                # TODO: socket.create_connection doesn't support source_address
+                #       in Python 2.6
+                warn(RuntimeWarning,
+                     "No support for binding a source address, will ignore")
+            sock = makesock((self.host, self.port), timeout)
 
             if (getattr(self, '_tunnel_host', None)
                     and hasattr(self, '_tunnel')):
