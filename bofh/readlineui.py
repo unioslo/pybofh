@@ -177,6 +177,7 @@ def prompter(prompt, mapping, help, default, argtype=None, optional=False):
             else:
                 return val
 
+
 def repl(bofh, charset=None, prompt=None):
     u"""Read Eval Print Loop
 
@@ -196,9 +197,9 @@ def repl(bofh, charset=None, prompt=None):
         prompt = u"bofh>>> "
     else:
         prompt = prompt.decode('string_escape')
-    
+
     import locale
-    if charset == None:
+    if charset is None:
         charset = locale.getpreferredencoding()
     readline.parse_and_bind("tab: complete")
     readline.set_completer(bofhcompleter(bofh, charset))
@@ -219,12 +220,15 @@ def repl(bofh, charset=None, prompt=None):
             parse = parser.parse(bofh, line)
             result = parse.eval(prompter=prompter)
 
+            if isinstance(result, list):
+                result = '\n'.join(result)
+
             # print
             print result.encode(charset)
             if script_file is not None:
                 script_file.write(result.encode(charset))
                 script_file.write(u"\n".encode(charset))
-        except SystemExit: # raised in internal_commands.quit()
+        except SystemExit:  # raised in internal_commands.quit()
             # XXX: Output some message?
             raise
         except proto.SessionExpiredError, e:
@@ -236,7 +240,7 @@ def repl(bofh, charset=None, prompt=None):
         except proto.BofhError, e:
             # Error from the bofh server
             print e.args[0].encode(charset)
-        except EOFError: # Sent from prompt func. Just ask for new command
+        except EOFError:   # Sent from prompt func. Just ask for new command
             print
         except parser.SynErr, e:
             print unicode(e).encode(charset)
@@ -247,4 +251,3 @@ def repl(bofh, charset=None, prompt=None):
             traceback.print_exc()
             if script_file is not None:
                 traceback.print_exc(file=script_file)
-
