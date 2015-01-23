@@ -139,6 +139,7 @@ class BofhTransport(SafeTransport, object):
             self._validate = bool(kw.pop(u'validate_hostname'))
         except KeyError:
             self._validate = True
+
         super(BofhTransport, self).__init__(*rest, **kw)
 
     def make_connection(self, host):

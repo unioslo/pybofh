@@ -215,7 +215,7 @@ class _Command(object):
             pw = promptfunc(u"You need to reauthenticate\nPassword:", None,
                             u"Please type your password", None,
                             'accountPassword')
-            self._bofh.login(None, pw)
+            self._bofh.login(None, pw, False)
             ret = e.cont()
 
         with_format = not ('with_format' in kw and not kw['with_format'])
@@ -285,7 +285,7 @@ class _Command(object):
             pw = prompt_func(u"You need to reauthenticate\nPassword:", None,
                              u"Please type your password", None,
                              'accountPassword')
-            self._bofh.login(None, pw)
+            self._bofh.login(None, pw, False)
             result = e.cont()
         if result.get('prompt') is None and result.get('last_arg'):
             return args
@@ -387,24 +387,20 @@ class Bofh(object):
     see http://cerebrum.sourceforge.net
 
     """
-    def __init__(self, username, password, url, cert):
+    def __init__(self, url, cert, insecure=False):
         u"""Connect to a bofh server"""
         self._connection = None
         self._groups = dict()
-        self._connect(url, cert)
-        # TODO Should this be split up and done in the bofh script?
-        #      We might want to let the user abort if e.g. connection is not
-        #      https
-        self.login(username, password)
-        self._init_commands()
+        self._connect(url, cert, insecure)
 
-    def _connect(self, url, cert=None):
+    def _connect(self, url, cert=None, insecure=False):
         u"""Establish a connection with the bofh server"""
         parts = urlparse(url)
         if parts.scheme == 'https':
             self._connection = _rpc.Server(
                 url,
-                transport=BofhTransport(cert, use_datetime=True),
+                transport=BofhTransport(cert, use_datetime=True,
+                                        validate_hostname=not insecure),
                 use_datetime=True)
         elif parts.scheme == 'http':
             self._connection = _rpc.Server(
@@ -480,13 +476,16 @@ class Bofh(object):
         u"""Get message of the day from server"""
         return _washresponse(self._connection.get_motd(client, version))
 
-    def login(self, user, password):
+    def login(self, user, password, init=True):
         u"""Log in to server"""
         if user is None:
             user = self._username
         else:
             self._username = user
         self._session = self._run_raw_command("login", user, password)
+
+        if init:
+            self._init_commands()
 
     def logout(self):
         self._run_raw_sess_command("logout")
@@ -532,13 +531,19 @@ class Bofh(object):
                                                        version.version))
 
     def _init_commands(self, reset=False):
-        u"""Initialize commands, this calls get_commands to get the list
-        of available commands (note that the server can have hidden commands.
-        Then a set of objects are built, so that a command as 'user info foo'
-        can be called as bofh.user.info(u'foo')
+        u"""Initialize commands.
+
+        This calls get_commands to get the list of available commands (note
+        that the server can have hidden commands). Then a set of objects are
+        built, so that a command as 'user info foo' can be called as
+        bofh.user.info(u'foo')
+
         """
-        # XXX: reset is set to true if server is restarted, and commands
-        # might have changed. It should mean: delete commands not in response
+        if reset:
+            for group in self._groups:
+                delattr(self, group)
+            self._groups = dict()
+
         cmds = self._connection.get_commands(self._session)
         for key, value in cmds.items():
             # key will typically be a string, e.g. "person_info"
@@ -547,13 +552,11 @@ class Bofh(object):
             # e.g. ["person", "info"]
             group, cmd = value[0]
             args = value[1] if len(value) == 2 else []
-            if group in self._groups:
-                self._groups[group]._add_command(cmd, key, args)
-            else:
+            if group not in self._groups:
                 grp = _CommandGroup(self, group)
                 self._groups[group] = grp
                 setattr(self, group, grp)
-                grp._add_command(cmd, key, args)
+            self._groups[group]._add_command(cmd, key, args)
 
     def get_bofh_command_keys(self):
         u"""Get the list of group keys"""

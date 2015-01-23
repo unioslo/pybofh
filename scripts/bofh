@@ -40,18 +40,24 @@ argp.add_argument('-u', '--user',
                   metavar='UNAME',
                   help=u"username")
 argp.add_argument('--url',
-                  default=bofh.get_default_url(),
+                  default=None,
                   metavar='URL',
-                  help=u"URL of a bofhd server")
+                  help=u"URL of a bofhd server.")
 argp.add_argument('-c', '--cert',
                   default=None,
-                  metavar='CERT',
-                  help=u"CA certificate")
+                  metavar='PEM',
+                  help=u"CA certificate in PEM-format.")
+argp.add_argument('--insecure',
+                  default=False,
+                  action='store_true',
+                  help=u"Do not perform certificate checks.")
 argp.add_argument('-p', '--prompt',
                   default='',
                   metavar='PROMPT',
                   help=u"Custom prompt")
 args = argp.parse_args()
+
+print args
 
 print (u"""This is PyBofh version %s
 
@@ -61,15 +67,16 @@ warranty, not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE."""
        % bofh.version.version).encode(locale.getpreferredencoding())
 
 try:
-    conn = bofh.connect(args.user,
-                        getpass.getpass(),
-                        url=args.url,
-                        cert=args.cert)
+    conn = bofh.connect(url=args.url,
+                        cert=args.cert,
+                        insecure=args.insecure)
+    motd = conn.motd  # Test connection
+    conn.login(args.user, getpass.getpass())
+    print motd
 except bofh.proto.BofhError, e:
     print e.args[0]
     sys.exit(1)
 
-print conn.motd
 try:
     bofh.readlineui.repl(conn, prompt=args.prompt)
 except Exception, e:
