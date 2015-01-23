@@ -21,32 +21,9 @@
 u"""Module to communicate with bofh server."""
 
 import xmlrpclib as _rpc
+from urlparse import urlparse
 from . import version
-
-
-class BofhTransport(_rpc.SafeTransport):
-    """A transport object"""
-    def __init__(self, cert, *rest, **kw):
-        self._cert = cert
-        _rpc.SafeTransport.__init__(self, *rest, **kw)
-
-    def make_connection(self, host):
-        """Override the default connection."""
-        from .https import get_https, get_httpsconn
-
-        # Only newer versions of xmlrpclib
-        if self._connection and host == self._connection[0]:
-            return self._connection[1]
-
-        # Note that older versions of xmlrpclib expects a httplib.HTTPS-like
-        # object from make_connection. In those cases we should do:
-        #     HTTPS = get_https(ca_file=self._cert)
-        #     host, extra_headers, x509 = self.get_host_info(host)
-        #     return HTTPS(host, None, **(x509 or {}))
-        HTTPS = get_httpsconn(ca_file=self._cert)
-        chost, self._extra_headers, x509 = self.get_host_info(host)
-        self._connection = host, HTTPS(chost, None, **(x509 or {}))
-        return self._connection[1]
+from .https import BofhTransport
 
 
 def _sdt2strftime(format):
@@ -92,7 +69,7 @@ def parse_format_suggestion(bofh_response, format_sugg):
 
     :param bofh_response: Response from bofh, washed with _washresponse
     :param format_sugg: Format suggestion"""
-    #XXX: Explain syntax of format suggestions
+    # XXX: Explain syntax of format suggestions
     def get_formatted_field(map, field):
         field = field.split(":", 2)
         val = map[field[0]]
@@ -127,7 +104,7 @@ def parse_format_suggestion(bofh_response, format_sugg):
                 if u"%" in sub_hdr:
                     format, sub_hdr = sub_hdr, None
             else:
-                format, vars  = row
+                format, vars = row
                 sub_hdr = None
             if sub_hdr:
                 lst.append(sub_hdr)
@@ -167,8 +144,8 @@ class _Argument(object):
 
     def __unicode__(self):
         stuff = ('type', 'optional', 'default')
-        return (u"{" + 
-                u", ".join(map(lambda x: x + u": %(" +x + u")s", stuff)) + 
+        return (u"{" +
+                u", ".join(map(lambda x: x + u": %(" + x + u")s", stuff)) +
                 u"}") % self.__dict__
 
 
@@ -188,7 +165,7 @@ class _PromptFunc(object):
         return u"prompt_func"
 
 
-#XXX: make a metaclass for commands
+# XXX: make a metaclass for commands
 class _Command(object):
     """An object representing a bofh command"""
     def __init__(self, group, name, fullname, args):
@@ -205,7 +182,7 @@ class _Command(object):
         if hlp is None:
             try:
                 hlp = self._help = self._bofh._run_raw_sess_command(
-                        "help", self._group._name, self._name)
+                    "help", self._group._name, self._name)
             except:
                 pass
             return hlp
@@ -216,7 +193,8 @@ class _Command(object):
         if self._format_suggestion is None:
             self._format_suggestion = self._bofh.get_format_suggestion(self._fullname)
         return self._format_suggestion
-    format_suggestion = property(_get_format_suggestion, doc=u"Get format suggestion")
+    format_suggestion = property(_get_format_suggestion,
+                                 doc=u"Get format suggestion")
 
     def __call__(self, *rest, **kw):
         """Call bofh with args
@@ -235,7 +213,8 @@ class _Command(object):
             if not e.cont:
                 raise
             pw = promptfunc(u"You need to reauthenticate\nPassword:", None,
-                            u"Please type your password", None, 'accountPassword')
+                            u"Please type your password", None,
+                            'accountPassword')
             self._bofh.login(None, pw)
             ret = e.cont()
 
@@ -245,8 +224,8 @@ class _Command(object):
             for i in args:
                 if isinstance(i, (list, tuple)):
                     return u'\n'.join(
-                            map(lambda x: parse_format_suggestion(x, self.format_suggestion),
-                                ret))
+                        map(lambda x: parse_format_suggestion(
+                            x, self.format_suggestion), ret))
             return parse_format_suggestion(ret, self.format_suggestion)
         return ret
 
@@ -265,7 +244,7 @@ class _Command(object):
                 has_prompted = True
                 arglst = rest + ret
                 ans = prompt_func(args[i].prompt,
-                                  None, 
+                                  None,
                                   args[i].help,
                                   self.get_default_param(i, arglst),
                                   args[i].type,
@@ -304,7 +283,8 @@ class _Command(object):
             if not e.cont:
                 raise
             pw = prompt_func(u"You need to reauthenticate\nPassword:", None,
-                             u"Please type your password", None, 'accountPassword')
+                             u"Please type your password", None,
+                             'accountPassword')
             self._bofh.login(None, pw)
             result = e.cont()
         if result.get('prompt') is None and result.get('last_arg'):
@@ -312,7 +292,8 @@ class _Command(object):
         map = result.get('map')
         newmap = []
         if map:
-            newmap.append((None, map[0][0][0] % tuple(map[0][0][1:]) if u'%' in map[0][0][0] else map[0][0][0]))
+            newmap.append((None, map[0][0][0] % tuple(map[0][0][1:]) if u'%' in
+                          map[0][0][0] else map[0][0][0]))
             i = 1
             for val, key in map[1:]:
                 newmap.append((
@@ -324,8 +305,8 @@ class _Command(object):
         if hlp:
             hlp = self._bofh.arg_help(hlp)
         while ans == u"":
-            ans = prompt_func(result.get('prompt'), 
-                              newmap, 
+            ans = prompt_func(result.get('prompt'),
+                              newmap,
                               hlp,
                               result.get('default'))
         # Yes, I have done some functional programming lately
@@ -351,7 +332,8 @@ class _Command(object):
             assert self._args == u"prompt_func"
             ret = self._fixed_args = [_PromptFunc(self._bofh)]
             return ret
-        ret = self._fixed_args = map(lambda x: _Argument(self._bofh, x), self._args)
+        ret = self._fixed_args = map(lambda x: _Argument(self._bofh, x),
+                                     self._args)
         return ret
 
 
@@ -376,32 +358,37 @@ class _CommandGroup(object):
 
 
 class BofhError(Exception):
-    """Exceptions from bofhd"""
+    u"""Exceptions from bofhd"""
     def __init__(self, message, cont=None):
         self.cont = cont
         super(BofhError, self).__init__(message)
 
 
 class SessionExpiredError(BofhError):
-    """Session has expired.
+    u"""Session has expired.
+
     This should probably be handled like this:
-    try:
-       bofh.command()
-    except SessionExpiredError, e:
-       bofh.login(username, getpass()) # i.e. log in again to get new session
-       if e.cont:
-           e.cont()  # call method again
+
+        try:
+            bofh.command()
+        except SessionExpiredError, e:
+            bofh.login(username, getpass()) # log in again to get new session
+            if e.cont:
+                e.cont()  # call method again
+
     """
+    pass
 
 
 class Bofh(object):
-    """A bofh communication object.
+    u"""A bofh communication object.
 
     Bofh performs xmlrpc calls to a remote bofhd server,
     see http://cerebrum.sourceforge.net
+
     """
     def __init__(self, username, password, url, cert):
-        """Connect to a bofh server"""
+        u"""Connect to a bofh server"""
         self._connection = None
         self._groups = dict()
         self._connect(url, cert)
@@ -411,16 +398,24 @@ class Bofh(object):
         self.login(username, password)
         self._init_commands()
 
-    def _connect(self, url, cert):
-        """Establish a connection with the bofh server"""
-        # TODO: If http, warn and use _rpc.Transport for transport
-        self._connection = _rpc.Server(
-            url,
-            transport=BofhTransport(cert, use_datetime=True),
-            use_datetime=True)
+    def _connect(self, url, cert=None):
+        u"""Establish a connection with the bofh server"""
+        parts = urlparse(url)
+        if parts.scheme == 'https':
+            self._connection = _rpc.Server(
+                url,
+                transport=BofhTransport(cert, use_datetime=True),
+                use_datetime=True)
+        elif parts.scheme == 'http':
+            self._connection = _rpc.Server(
+                url,
+                transport=_rpc.Transport(),
+                use_datetime=True)
+        else:
+            raise BofhError("Unsupported protocol: '%s'" % parts.scheme)
 
     def _run_raw_command(self, name, *args):
-        """Run a command on the server"""
+        u"""Run a command on the server"""
         fn = getattr(self._connection, name)
         try:
             return _washresponse(fn(*args))
@@ -441,8 +436,9 @@ class Bofh(object):
             raise
 
     def _run_raw_sess_command(self, name, *args):
-        """Run a command on the server, supply the session id as first param"""
+        u"""Run a command on the server, using the session_id."""
         fn = getattr(self._connection, name)
+
         def run_command():
             try:
                 return _washresponse(fn(self._session, *args))
@@ -452,7 +448,7 @@ class Bofh(object):
                     self._init_commands(reset=True)
                     return _washresponse(fn(*args))
                 elif e.faultString.startswith(epkg + 'SessionExpiredError:'):
-                    raise SessionExpiredError(u"Session expired", 
+                    raise SessionExpiredError(u"Session expired",
                                               run_command)
                 elif e.faultString.startswith(epkg):
                     if ':' in e.faultString:
@@ -481,11 +477,11 @@ class Bofh(object):
     # get_format_suggestion(command)
 
     def get_motd(self, client=u"PyBofh", version=version.version):
-        "Get message of the day from server"
+        u"""Get message of the day from server"""
         return _washresponse(self._connection.get_motd(client, version))
 
     def login(self, user, password):
-        "Log in to server"
+        u"""Log in to server"""
         if user is None:
             user = self._username
         else:
@@ -495,40 +491,45 @@ class Bofh(object):
     def logout(self):
         self._run_raw_sess_command("logout")
         self._session = None
-        #XXX bring down all commands
+        # XXX bring down all commands
 
     def get_commands(self):
-        """Get commands user can operate on"""
+        u"""Get commands user can operate on"""
         return self._run_raw_sess_command("get_commands")
 
     def help(self, *args):
-        """Get help"""
+        u"""Get help"""
         return self._run_raw_sess_command("help", *args)
 
     def arg_help(self, help_ref):
-        """Get help on argument"""
+        u"""Get help on argument"""
         return self.help("arg_help", help_ref)
 
     def run_command(self, command, *args):
-        """Run a regular command"""
+        u"""Run a regular command"""
         return self._run_raw_sess_command("run_command", command, *args)
 
     def call_prompt_func(self, command, *args):
-        """Call prompt_func"""
+        u"""Call prompt_func"""
         return self._run_raw_sess_command("call_prompt_func", command, *args)
 
     def get_default_param(self, command, *args):
-        """Get default value for param (where not supplied from get_commands)"""
+        u"""Get default value for param.
+
+        Gets the default value for param (where not supplied from get_commands)
+
+        """
         return self._run_raw_sess_command("get_default_param", command, *args)
 
     def get_format_suggestion(self, command):
-        """Get format suggestion for command"""
+        u"""Get format suggestion for command"""
         return self._run_raw_command("get_format_suggestion", command)
 
     @property
     def motd(self):
         u"""Get message of the day from bofh server"""
-        return _washresponse(self._connection.get_motd(u"PyBofh", version.version))
+        return _washresponse(self._connection.get_motd(u"PyBofh",
+                                                       version.version))
 
     def _init_commands(self, reset=False):
         u"""Initialize commands, this calls get_commands to get the list
