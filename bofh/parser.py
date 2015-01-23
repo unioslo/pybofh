@@ -20,6 +20,7 @@
 
 u"""The PyBofh command parser"""
 
+
 class SynErr(Exception):
     u"""Syntax error. Base class for syntax errors"""
     def __init__(self, msg, index=None):
@@ -32,6 +33,7 @@ class SynErr(Exception):
             return u"Syntax error"
         return u"Syntax error at col %s: %s" % (self.index, self.msg)
 
+
 class IncompleteParse(SynErr):
     u"""Parser ran off end without finding matching " or )"""
     def __init__(self, msg, parse, expected):
@@ -39,12 +41,14 @@ class IncompleteParse(SynErr):
         self.parse = parse
         self.completions = expected
 
+
 class NoGroup(SynErr):
     u"""The group didn't match any defined command"""
     def __init__(self, parse, completions):
         super(NoGroup, self).__init__(u"No matching command", 0)
         self.parse = parse
         self.completions = completions
+
 
 class Command(object):
     """Base class for commands returned by :func:`parse`"""
@@ -127,6 +131,7 @@ class BofhCommand(Command):
         except AttributeError:
             raise NoGroup(None, args)
 
+
 class InternalCommand(Command):
     """A command object for an internal command."""
     def eval(self, *rest, **kw):
@@ -136,6 +141,7 @@ class InternalCommand(Command):
         cmdref = getattr(where, cmdname)
         args = [x[0] for x in self.args[1:] if x[1] != -1]
         return cmdref(self.bofh, *args)
+
 
 class HelpCommand(InternalCommand):
     """Help command"""
@@ -162,6 +168,7 @@ class HelpCommand(InternalCommand):
         args = self.get_args()
         return cmdref(self.bofh, *args)
 
+
 class SingleCommand(InternalCommand):
     """An internal command taking no args"""
     def __init__(self, bofh, fullcmd, cmd, index, line):
@@ -175,11 +182,13 @@ class SingleCommand(InternalCommand):
     def eval(self, *rest, **kw):
         return self.cmdref(self.bofh)
 
+
 class FileCompleter(object):
     """Some of the commands takes file as a param. Complete this"""
     # XXX: Is this maybe standard in readline?
     def __call__(self, start, end, arg, argstart, completions):
-        return [] # glob(arg + '*') or better
+        return []  # glob(arg + '*') or better
+
 
 class ArgCompleter(object):
     """Try to complete some arguments"""
@@ -187,13 +196,15 @@ class ArgCompleter(object):
         self.arg = arg
 
     def __call__(self, start, end, arg, argstart, completions):
-        return [] # perhaps do something here based on arg type
+        return []  # perhaps do something here based on arg type
+
 
 def _r(fname):
     """Quick check if fname is the name of a readable file"""
     import os.path
     fname = os.path.realpath(fname)
     return os.path.exists(fname) and os.path.isfile(fname)
+
 
 def _parse_bofh_command(bofh, fullgrp, group, start, lex, line):
     """Parse the rest of a bofh command.
@@ -214,7 +225,7 @@ def _parse_bofh_command(bofh, fullgrp, group, start, lex, line):
     """
     # Setup return object
     grp = getattr(bofh, fullgrp)
-    ret = BofhCommand(bofh, line) # XXX: Args
+    ret = BofhCommand(bofh, line)  # XXX: Args
     ret.append(group, start, [fullgrp])
 
     # Find second half of the command
@@ -235,7 +246,7 @@ def _parse_bofh_command(bofh, fullgrp, group, start, lex, line):
             try:
                 arg, idx = parse_string_or_list(lex)
                 ret.append(arg, idx, ArgCompleter(expected))
-            except IncompleteParse, e: # arg, idx = e.parse
+            except IncompleteParse, e:  # arg, idx = e.parse
                 if e.parse:
                     arg, idx = e.parse
                     ret.append(arg, idx, ArgCompleter(expected))
@@ -249,8 +260,9 @@ def _parse_bofh_command(bofh, fullgrp, group, start, lex, line):
             if e.parse:
                 arg, idx = parse_string_or_list(lex)
                 ret.append(arg, idx, ArgCompleter(expected))
-                raise IncompleteParse(e.args[0], ret, e.completions) 
+                raise IncompleteParse(e.args[0], ret, e.completions)
     return ret
+
 
 def _parse_help(bofh, fullgrp, group, start, lex, line):
     """Parse the help command"""
@@ -285,7 +297,7 @@ def _parse_help(bofh, fullgrp, group, start, lex, line):
         cmd, idx, completes = match_item(args[0], allcmds)
         ret.append(cmd, idx, completes)
 
-        if len(completes) != 1: # no completion for second arg
+        if len(completes) != 1:  # no completion for second arg
             if len(args) == 2:
                 ret.append(args[1][0], args[1][1], [])
         else:
@@ -307,8 +319,9 @@ def _parse_help(bofh, fullgrp, group, start, lex, line):
                 else:
                     raise SynErr(u"Too many arguments for help", args[1][1])
             else:
-                pass # incomplete, finn grouppe/intern kommando
+                pass  # incomplete, find group/internal command
     return ret
+
 
 def _parse_script(bofh, fullgrp, group, start, lex, line):
     """Parse script internal command"""
@@ -376,12 +389,13 @@ def _parse_single(bofh, fullgrp, group, start, lex, line):
 
 # table of internal commands, see also internal_commands.py
 _internal_cmds = {
-        u'help': _parse_help,
-        u'source': _parse_source,
-        u'script': _parse_script,
-        u'quit': _parse_single,
-        u'commands': _parse_single
-        }
+    u'help': _parse_help,
+    u'source': _parse_source,
+    u'script': _parse_script,
+    u'quit': _parse_single,
+    u'commands': _parse_single
+}
+
 
 def parse(bofh, text):
     """Parses a command
@@ -408,6 +422,7 @@ def parse(bofh, text):
     rest = [i for i in lex]
     rest.insert(0, (group, idx))
     raise NoGroup(rest, fltrcmds)
+
 
 def parse_string(lex, expected=[]):
     """Get a string from lex, fail on list, and return possible matches
@@ -439,31 +454,33 @@ def parse_string(lex, expected=[]):
         solematch = False
     return val, idx, expected, solematch
 
+
 def parse_string_or_list(lex):
     """Get a string or list of strings from lexer"""
     def parse_list():
         # parse until we get a )
         ret = []
         for val, idx in lex:
-            if idx == -1: # signals missing char after \ or missing matching ".
-                try: # gets either ", -1 or some last token
+            if idx == -1:  # signals missing char after \ or missing matching ".
+                try:  # gets either ", -1 or some last token
                     val1, idx1 = lex.next()
-                except StopIteration: # no last token
-                    raise IncompleteParse(u"Expected %s, got nothing" % (u"something" if 
-                        val == u'\\' else u')'), ret, [])
-                if idx1 == -1: # signal we want both a \ ending and a "
-                    try: # check if the last token waits.
+                except StopIteration:  # no last token
+                    raise IncompleteParse(u"Expected %s, got nothing" % (
+                        u"something" if val == u'\\' else u')'), ret, [])
+                if idx1 == -1:  # signal we want both a \ ending and a "
+                    try:  # check if the last token waits.
                         val1, idx1 = lex.next()
                         ret.append((val1, idx1))
-                        raise IncompleteParse(u"Expected something and \", got nothing", 
-                                ret, [u' ")'])
+                        raise IncompleteParse(
+                            u"Expected something and \", got nothing", ret, [u' ")'])
                     except StopIteration:
-                        raise IncompleteParse(u"Expected something and \", got nothing", 
-                                ret, [u' ")'])
-                else: # val1, idx1 holds the last token
+                        raise IncompleteParse(
+                            u"Expected something and \", got nothing", ret, [u' ")'])
+                else:  # val1, idx1 holds the last token
                     ret.append((va1, idx1))
-                    raise IncompleteParse(u"Expected %s, got nothing" % (u"something" if
-                        val == u"\\" else u')'), ret, [u' )' if val == u"\\" else u'")'])
+                    raise IncompleteParse(
+                        u"Expected %s, got nothing" % (u"something" if val == u"\\" else u')'),
+                        ret, [u' )' if val == u"\\" else u'")'])
             elif val == u'(':
                 # we don't know what to do
                 # XXX: should we continue parsing?
@@ -479,18 +496,21 @@ def parse_string_or_list(lex):
     if idx == -1:
         try:
             val1, idx1 = lex.next()
-        except StopIteration: # no last token
-            raise IncompleteParse(u"Expected %s, got nothing" % (u"something" if 
-                val == u'\\' else u'"'), None, [u' ' if val == u'\\' else u'"'])
-        if idx1 == -1: # signal we want both a \ ending and a "
-            try: # check if the last token waits.
+        except StopIteration:  # no last token
+            raise IncompleteParse(
+                u"Expected %s, got nothing" % (u"something" if val == u'\\' else u'"'),
+                None, [u' ' if val == u'\\' else u'"'])
+        if idx1 == -1:  # signal we want both a \ ending and a "
+            try:  # check if the last token waits.
                 val1, idx1 = lex.next()
-                raise IncompleteParse(u"Expected something and \", got nothing", (val1, idx1), [u' "'])
+                raise IncompleteParse(
+                    u"Expected something and \", got nothing", (val1, idx1), [u' "'])
             except StopIteration:
                 raise IncompleteParse(u"Expected something and \", got nothing", None, [u' "'])
-        else: # val1, idx1 holds the last token
-            raise IncompleteParse(u"Expected %s, got nothing" % (u"something" if
-                val == u"\\" else u')'), (val1, idx1), [u' ' if val == u'\\' else u'"'])
+        else:  # val1, idx1 holds the last token
+            raise IncompleteParse(
+                u"Expected %s, got nothing" % (u"something" if val == u"\\" else u')'),
+                (val1, idx1), [u' ' if val == u'\\' else u'"'])
     elif val == u'(':
         try:
             return parse_list(), idx
@@ -499,6 +519,7 @@ def parse_string_or_list(lex):
             raise
     else:
         return val, idx
+
 
 def lexer(text):
     """Generates tokens from the text"""
@@ -550,4 +571,3 @@ def lexer(text):
         yield u'"', -1
     if ret:
         yield u''.join(ret), start
-
