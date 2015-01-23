@@ -477,7 +477,7 @@ def parse_string_or_list(lex):
                         raise IncompleteParse(
                             u"Expected something and \", got nothing", ret, [u' ")'])
                 else:  # val1, idx1 holds the last token
-                    ret.append((va1, idx1))
+                    ret.append((val1, idx1))
                     raise IncompleteParse(
                         u"Expected %s, got nothing" % (u"something" if val == u"\\" else u')'),
                         ret, [u' )' if val == u"\\" else u'")'])
