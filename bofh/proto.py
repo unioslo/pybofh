@@ -413,6 +413,9 @@ class Bofh(object):
     def _run_raw_command(self, name, *args):
         u"""Run a command on the server"""
         fn = getattr(self._connection, name)
+
+        args = self.format_args(args)
+
         try:
             return _washresponse(fn(*args))
         except _rpc.Fault, e:
@@ -435,6 +438,8 @@ class Bofh(object):
         u"""Run a command on the server, using the session_id."""
         fn = getattr(self._connection, name)
 
+        args = self.format_args(args)
+
         def run_command():
             try:
                 return _washresponse(fn(self._session, *args))
@@ -454,6 +459,17 @@ class Bofh(object):
                         raise BofhError(msg)
                 raise
         return run_command()
+
+    def format_args(self, args):
+        u"""Add additional ':' if an argument is a basestring and starts with 
+        ':', as this will get sliced off by xmlutils.py in backend."""
+        argslist = list(args)
+        pos = 0
+        for arg in argslist:
+            if isinstance(arg, basestring) and arg.startswith(':'):
+                argslist[pos] = ':' + arg
+            pos += 1
+        return tuple(argslist)
 
     # XXX: There are only a handfull of bofhd commands:
     # motd = get_motd(client_name, version)
