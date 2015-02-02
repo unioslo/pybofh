@@ -33,29 +33,42 @@ Username: user
 """
 
 __all__ = ['internal_commands', 'parser', 'proto', 'readlineui',
-        'version', 'get_default_url', 'get_default_cert', 'connect']
-import xmlrpclib as _rpc
+           'version', 'get_default_url', 'get_default_cert', 'connect']
+import sys
+import os.path
 from . import proto
 
+
 def get_default_url():
-    """Get default url for connecting to bofh"""
-    #XXX This should be configurable
-    return "https://cerebrum-uio.uio.no:8000"
+    u"""Get default url for connecting to bofh"""
+    # TODO: This should be configurable
+    return u'https://cerebrum-uio.uio.no:8000'
+
 
 def get_default_cert():
-    """Get default certificate"""
-    #XXX: Implement cert checking, and make this configurable
-    return {}
+    u"""Get default certificate"""
+    # TODO: Should this be configurable? It depends on setup.py
+    return os.path.join(sys.prefix, u'etc/pybofh/ca.pem')
 
-def connect(username, password, url=None, cert=None):
+
+def connect(url=None, cert=None, insecure=False):
     u"""Connect to the bofh server, log in, and return a bofh object
 
-    :param username: Your username
-    :param password: Your password
-    :url: None for default url, or some https url
-    :cert: None for default cert, or some cert
-    :return: New bofh communication object
-    :rtype: bofh.proto.Bofh
-    """
-    return proto.Bofh(username, password, url or get_default_url(), cert or get_default_cert())
+    :type url: None, str
+    :param url: Some url, or None for default url.
 
+    :type cert: None, str
+    :param cert:
+        Path to a PEM-file with CA-certificate, or None to use the default
+        certificate.
+
+    :type insecure: bool
+    :param insecure: Do not perform certificate checks (hostname validation)
+
+    :rtype: bofh.proto.Bofh
+    :return: New bofh communication object
+
+    """
+    return proto.Bofh(url or get_default_url(),
+                      cert or get_default_cert(),
+                      insecure)

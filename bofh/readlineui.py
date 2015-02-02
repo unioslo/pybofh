@@ -236,7 +236,7 @@ def repl(bofh, charset=None, prompt=None):
             print "Session expired, you need to reauthenticate"
             import getpass
             pw = getpass.getpass()
-            bofh.login(None, pw)
+            bofh.login(None, pw, init=False)
         except proto.BofhError, e:
             # Error from the bofh server
             print e.args[0].encode(charset)
