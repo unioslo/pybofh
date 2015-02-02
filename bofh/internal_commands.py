@@ -26,6 +26,7 @@ returned from :func:`bofh.parser.parse`.
 """
 
 from __future__ import with_statement
+import os
 
 # Helptexts for the help() function
 _helptexts = {
@@ -61,6 +62,7 @@ def help(bofh, *args):
         return bofh.help(arg)
     return bofh.help(*args)
 
+
 def source(bofh, ignore_errors=False, script=None):
     """Read lines from file, parse, and execute each line.
 
@@ -71,18 +73,35 @@ def source(bofh, ignore_errors=False, script=None):
     :param ignore_errors: Do not propagate an exception, but continue.
     :param script: The script fie to execute.
     """
+    if not script or not os.path.isfile(script):
+        return 'Source file not given or does not exist.'
+
+    ret = []
+    line_no = 0
+
     from .parser import parse
     with open(script) as src:
         for line in src:
+            line_no += 1
             stripped = line.strip()
             if not stripped or stripped.startswith('#'):
                 continue
             try:
                 parsed = parse(bofh, line)
-                parsed.eval()
-            except:
+                ret.append(parsed.eval())
+            except BaseException, e:
                 if not ignore_errors:
-                    raise
+                    ret.append('Error: %s' % str(e))
+                    ret.append('Sourcing of %s aborted on line %d' % (script,
+                                                                      line_no))
+                    ret.append(
+                        'Hint: Use \'source --ignore-errors file\' to '
+                        'ignore errors')
+                    return ret
+                ret.append('Error: %s (on line %d)' % (str(e), line_no))
+
+    return ret
+
 
 def script(bofh, file=None):
     """Open file, and set it as log file for reader

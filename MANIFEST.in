@@ -1,0 +1,2 @@
+recursive-include bofh *.txt *.md
+recursive-include data *.pem

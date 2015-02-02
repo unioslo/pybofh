@@ -23,6 +23,7 @@ from distutils.core import setup
 from distutils.cmd import Command
 
 class archival(object):
+
     def __init__(self):
         self.latesttag = []
         self.tag = []
@@ -49,6 +50,7 @@ class archival(object):
             elif k == 'latesttagdistance':
                 self.latesttagdistance = int(v.strip())
 
+
 def archive_version():
     ar = archival()
     for tag in ar.tag:
@@ -56,6 +58,7 @@ def archive_version():
             return tag.split('-', 1)[1]
     if ar.node:
         return ar.node[:12]
+
 
 def hg_version():
     import os
@@ -69,9 +72,11 @@ def hg_version():
             return tag.split('-', 1)[1]
     return ctx.hex()[:12]
 
+
 def bofh_version():
     from bofh.version import version
     return version
+
 
 def get_version():
     av = archive_version()
@@ -82,7 +87,6 @@ def get_version():
         return hv
     except:
         return bofh_version()
-
 
 
 def replace_copy_file(version):
@@ -120,5 +124,6 @@ setup(name='pybofh',
       version=version,
       license='GPL',
       scripts=['scripts/bofh', 'scripts/passwd'],
-      packages=['bofh'])
-
+      packages=['bofh', 'bofh.ext'],
+      package_data={'bofh.ext': ['LICENCE.txt', 'README.md'], },
+      data_files=[('etc/pybofh', ['data/ca.pem', ]), ])
