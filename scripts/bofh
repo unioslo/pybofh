@@ -21,13 +21,13 @@
 
 import getpass
 import locale
-import sys
 
 import bofh.readlineui
 import bofh.version
 import bofh.proto
 
 encoding = locale.getpreferredencoding()
+encode = lambda s, e=encoding: s.encode(e)
 
 try:
     import argparse
@@ -57,29 +57,28 @@ argp.add_argument('-p', '--prompt',
                   help=u"Custom prompt")
 args = argp.parse_args()
 
-print args
 
-print (u"""This is PyBofh version %s
+print encode(u"""This is PyBofh version %s
 
 Copyright (c) 2010, 2014 University of Oslo, Norway
 This is free software; see the source for copying conditions. There is NO
-warranty, not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE."""
-       % bofh.version.version).encode(locale.getpreferredencoding())
+warranty, not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+""" % bofh.version.version)
 
 try:
     conn = bofh.connect(url=args.url,
                         cert=args.cert,
                         insecure=args.insecure)
-    motd = conn.motd  # Test connection
-    conn.login(args.user, getpass.getpass())
-    print motd
+    if conn.motd:
+        # Test the connection and print motd.
+        print encode(u'%s\n' % conn.motd)
+    conn.login(args.user, getpass.getpass(u'Password for %s:' % args.user))
 except bofh.proto.BofhError, e:
-    print e.args[0]
-    sys.exit(1)
+    raise SystemExit(u'%s' % e.args[0])
 
 try:
     bofh.readlineui.repl(conn, prompt=args.prompt)
 except Exception, e:
-    print 'Error: %s' % str(e)
+    print encode(u'Error: %s' % e)
 finally:
     conn.logout()
