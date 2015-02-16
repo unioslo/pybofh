@@ -24,6 +24,9 @@ import xmlrpclib as _rpc
 from urlparse import urlparse
 from . import version
 from .https import BofhTransport
+import bofh
+import socket
+import ssl
 
 
 def _sdt2strftime(format):
@@ -396,6 +399,22 @@ class Bofh(object):
     def _connect(self, url, cert=None, insecure=False):
         u"""Establish a connection with the bofh server"""
         parts = urlparse(url)
+
+        # If urlparse was given an incomplete url, try to add defaults.
+        if parts.netloc == '':
+            url = parts.path
+
+            # No port number found, add default value.
+            if ':' not in url:
+                url = u''.join((url, ':', bofh.get_default_port()))
+
+            # No protocol found, add default value.
+            if parts.scheme == '':
+                url = u''.join((bofh.get_default_protocol(), '://', url))
+
+            # Reparse new URL
+            parts = urlparse(url)
+            print parts
         if parts.scheme == 'https':
             self._connection = _rpc.Server(
                 url,
@@ -409,6 +428,17 @@ class Bofh(object):
                 use_datetime=True)
         else:
             raise BofhError("Unsupported protocol: '%s'" % parts.scheme)
+        # Call non-existing method on connection. If this throws an _rpc.Fault,
+        # this means we are connected to server, and everything is OK.
+        # Other exception-types indicate that the connection failed.
+        try:
+            self._connection._()
+        except _rpc.Fault:
+            pass
+        except ssl.SSLError, e:
+                raise BofhError(e)
+        except socket.error, e:
+            raise BofhError(e)
 
     def _run_raw_command(self, name, *args):
         u"""Run a command on the server"""
