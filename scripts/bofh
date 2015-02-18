@@ -93,9 +93,7 @@ try:
     conn = bofh.connect(url=complete_url(args.url),
                         cert=args.cert,
                         insecure=args.insecure)
-    if conn.motd:
-        # Test the connection and print motd.
-        print encode(u'%s\n' % conn.motd)
+    print encode(u'%s\n' % conn.motd)
     conn.login(args.user, getpass.getpass(u'Password for %s:' % args.user))
 
 except bofh.proto.BofhError, e:

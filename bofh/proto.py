@@ -413,15 +413,11 @@ class Bofh(object):
                 use_datetime=True)
         else:
             raise BofhError("Unsupported protocol: '%s'" % parts.scheme)
-        # Call non-existing method on connection. If this throws an _rpc.Fault,
-        # this means we are connected to server, and everything is OK.
-        # Other exception-types indicate that the connection failed.
+        # Test for valid server connection, handle thrown exceptions.
         try:
-            self._connection._()
-        except _rpc.Fault:
-            pass
+            self.get_motd()
         except ssl.SSLError, e:
-                raise BofhError(e)
+            raise BofhError(e)
         except socket.error, e:
             raise BofhError(e)
 
