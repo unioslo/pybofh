@@ -400,21 +400,6 @@ class Bofh(object):
         u"""Establish a connection with the bofh server"""
         parts = urlparse(url)
 
-        # If urlparse was given an incomplete url, try to add defaults.
-        if parts.netloc == '':
-            url = parts.path
-
-            # No port number found, add default value.
-            if ':' not in url:
-                url = u''.join((url, ':', bofh.get_default_port()))
-
-            # No protocol found, add default value.
-            if parts.scheme == '':
-                url = u''.join((bofh.get_default_protocol(), '://', url))
-
-            # Reparse new URL
-            parts = urlparse(url)
-            print parts
         if parts.scheme == 'https':
             self._connection = _rpc.Server(
                 url,
