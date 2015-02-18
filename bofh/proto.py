@@ -24,7 +24,6 @@ import xmlrpclib as _rpc
 from urlparse import urlparse
 from . import version
 from .https import BofhTransport
-import bofh
 import socket
 import ssl
 
