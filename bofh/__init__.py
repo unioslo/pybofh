@@ -31,18 +31,36 @@ Message of the day
 Username: user
 ...
 """
-
-__all__ = ['internal_commands', 'parser', 'proto', 'readlineui',
-           'version', 'get_default_url', 'get_default_cert', 'connect']
 import sys
 import os.path
 from . import proto
+
+__all__ = ['internal_commands', 'parser', 'proto', 'readlineui', 'version',
+           'get_default_url', 'get_default_protocol', 'get_default_host',
+           'get_default_port', 'get_default_cert', 'connect']
 
 
 def get_default_url():
     u"""Get default url for connecting to bofh"""
     # TODO: This should be configurable
-    return u'https://cerebrum-uio.uio.no:8000'
+    return u'%s://%s:%s' % (get_default_protocol(),
+                            get_default_host(),
+                            get_default_port())
+
+
+def get_default_protocol():
+    u"""Get default protocol for connecting to bofh"""
+    return u'https'
+
+
+def get_default_host():
+    u"""Get default host for connecting to bofh"""
+    return u'cerebrum-uio.uio.no'
+
+
+def get_default_port():
+    u"""Get default port for connecting to bofh"""
+    return u'8000'
 
 
 def get_default_cert():

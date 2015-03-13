@@ -24,6 +24,8 @@ import xmlrpclib as _rpc
 from urlparse import urlparse
 from . import version
 from .https import BofhTransport
+import socket
+import ssl
 
 
 def _sdt2strftime(format):
@@ -396,6 +398,7 @@ class Bofh(object):
     def _connect(self, url, cert=None, insecure=False):
         u"""Establish a connection with the bofh server"""
         parts = urlparse(url)
+
         if parts.scheme == 'https':
             self._connection = _rpc.Server(
                 url,
@@ -409,6 +412,13 @@ class Bofh(object):
                 use_datetime=True)
         else:
             raise BofhError("Unsupported protocol: '%s'" % parts.scheme)
+        # Test for valid server connection, handle thrown exceptions.
+        try:
+            self.get_motd()
+        except ssl.SSLError, e:
+            raise BofhError(e)
+        except socket.error, e:
+            raise BofhError(e)
 
     def _run_raw_command(self, name, *args):
         u"""Run a command on the server"""
@@ -489,8 +499,9 @@ class Bofh(object):
     # get_format_suggestion(command)
 
     def get_motd(self, client=u"PyBofh", version=version.version):
-        u"""Get message of the day from server"""
-        return _washresponse(self._connection.get_motd(client, version))
+        u"""Get (and cache) message of the day from server"""
+        self._motd = _washresponse(self._connection.get_motd(client, version))
+        return self._motd
 
     def login(self, user, password, init=True):
         u"""Log in to server"""
@@ -542,9 +553,8 @@ class Bofh(object):
 
     @property
     def motd(self):
-        u"""Get message of the day from bofh server"""
-        return _washresponse(self._connection.get_motd(u"PyBofh",
-                                                       version.version))
+        u"""Get (cached) message of the day from bofh server"""
+        return getattr(self, '_motd', self.get_motd())
 
     def _init_commands(self, reset=False):
         u"""Initialize commands.
