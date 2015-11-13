@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright 2010 University of Oslo, Norway
+# Copyright 2010-2015 University of Oslo, Norway
 #
 # This file is part of PyBofh.
 #
@@ -457,7 +457,7 @@ class Bofh(object):
                 epkg = 'Cerebrum.modules.bofhd.errors.'
                 if e.faultString.startswith(epkg + 'ServerRestartedError:'):
                     self._init_commands(reset=True)
-                    return _washresponse(fn(*args))
+                    return _washresponse(fn(self._session, *args))
                 elif e.faultString.startswith(epkg + 'SessionExpiredError:'):
                     raise SessionExpiredError(u"Session expired",
                                               run_command)
