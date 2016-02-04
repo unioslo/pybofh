@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright 2010 University of Oslo, Norway
+# Copyright 2010-2016 University of Oslo, Norway
 #
 # This file is part of PyBofh.
 #
@@ -21,12 +21,16 @@
 
 u"""Readline user interface for PyBofh."""
 
+import getpass
+import locale
 import readline
+
 from . import parser, proto
+
 
 class bofhcompleter(object):
     u"""Completer functor for bofh completion.
-    
+
     An instance of this class should be usable as a completer
     to send to GNU readline.
     """
@@ -68,32 +72,36 @@ class bofhcompleter(object):
         # Get the readline buffer, parse, and lookup the parse object
         # to fill in the completions.
         # Note how the bofh.parser module carefully inserts completions.
-        line = readline.get_line_buffer()
+        line = readline.get_line_buffer().decode(self.encoding)
         # parse() raises exception when it could not make sense
         # of the input, but this should be fairly common for
         # completions
         try:
-            parse = parser.parse(self._bofh, readline.get_line_buffer())
-            self.completes = parse.complete(readline.get_begidx(), readline.get_endidx())
+            parse = parser.parse(self._bofh, line)
+            self.completes = parse.complete(readline.get_begidx(),
+                                            readline.get_endidx())
         except parser.NoGroup, e:
             idx = readline.get_begidx()
             if idx == 0 or line[:idx].isspace():
-                self.completes = e.completions 
+                self.completes = e.completions
         except parser.IncompleteParse, e:
-            self.completes = e.parse.complete(readline.get_begidx(), readline.get_endidx())
+            self.completes = e.parse.complete(readline.get_begidx(),
+                                              readline.get_endidx())
         except:
             import traceback
             traceback.print_exc()
+
 
 script_file = None
 u"""script_file is set to a file if commands should be logged.
 XXX: this should be moved elsewhere."""
 
+
 def prompter(prompt, mapping, help, default, argtype=None, optional=False):
     u"""A promter function. This is used for asking for more
     arguments, or when arguments are given with prompt_func in bofh.
 
-    This function is supplied to the evaluator returned from 
+    This function is supplied to the evaluator returned from
     :func:`bofh.parser.parse`, and usually called from the command
     object for the command in :class:`bofh.proto.Bofh`.
 
@@ -109,8 +117,6 @@ def prompter(prompt, mapping, help, default, argtype=None, optional=False):
     :type argtype: unicode
     :optional: True if this arg is optional
     """
-    import getpass, locale
-
     # tell the user about the default value by including it in the prompt
     if default is not None:
         _prompt = u"%s [%s] > " % (prompt, default)
@@ -120,9 +126,7 @@ def prompter(prompt, mapping, help, default, argtype=None, optional=False):
     # Simple method to select an inputfunc for asking user for data.
     # A dict is used to be able to extend this easily for other
     # types.
-    inputfunc = {
-            'accountPassword': getpass.getpass,
-            }.get(argtype, raw_input)
+    inputfunc = {'accountPassword': getpass.getpass}.get(argtype, raw_input)
     map = []
 
     # format the mapping for the user
@@ -138,7 +142,7 @@ def prompter(prompt, mapping, help, default, argtype=None, optional=False):
         if map:
             print mapstr
         # get input from user
-        val = inputfunc(_prompt).strip().encode(locale.getpreferredencoding())
+        val = inputfunc(_prompt).strip().decode(locale.getpreferredencoding())
         # Lines read at this stage, are params to a command.
         # We remove them from the history.
         # Note that we only do this for non-empty lines! If we do it for all
@@ -198,7 +202,6 @@ def repl(bofh, charset=None, prompt=None):
     else:
         prompt = prompt.decode('string_escape')
 
-    import locale
     if charset is None:
         charset = locale.getpreferredencoding()
     readline.parse_and_bind("tab: complete")
@@ -234,7 +237,6 @@ def repl(bofh, charset=None, prompt=None):
         except proto.SessionExpiredError, e:
             # Session expired, relogin.
             print "Session expired, you need to reauthenticate"
-            import getpass
             pw = getpass.getpass()
             bofh.login(None, pw, init=False)
         except proto.BofhError, e:
