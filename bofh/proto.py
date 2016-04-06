@@ -403,13 +403,11 @@ class Bofh(object):
             self._connection = _rpc.Server(
                 url,
                 transport=BofhTransport(cert, use_datetime=True,
-                                        validate_hostname=not insecure),
-                use_datetime=True)
+                                        validate_hostname=not insecure))
         elif parts.scheme == 'http':
             self._connection = _rpc.Server(
                 url,
-                transport=_rpc.Transport(),
-                use_datetime=True)
+                transport=_rpc.Transport(use_datetime=True))
         else:
             raise BofhError("Unsupported protocol: '%s'" % parts.scheme)
         # Test for valid server connection, handle thrown exceptions.
