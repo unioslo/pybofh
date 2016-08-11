@@ -225,9 +225,8 @@ class _Command(object):
         if with_format and not isinstance(ret, basestring):
             for i in args:
                 if isinstance(i, (list, tuple)):
-                    return u'\n'.join(
-                        map(lambda x: parse_format_suggestion(
-                            x, self.format_suggestion), ret))
+                    return map(lambda x: parse_format_suggestion(
+                            x, self.format_suggestion), ret)
             return parse_format_suggestion(ret, self.format_suggestion)
         return ret
 

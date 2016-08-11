@@ -224,7 +224,7 @@ def repl(bofh, charset=None, prompt=None):
             result = parse.eval(prompter=prompter)
 
             if isinstance(result, list):
-                result = '\n'.join(result)
+                result = u'\n\n'.join(result)
 
             # print
             print result.encode(charset)
