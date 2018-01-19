@@ -216,6 +216,8 @@ def repl(bofh, charset=None, prompt=None):
         except EOFError:
             print "So long, and thanks for all the fish!"
             return
+        except KeyboardInterrupt:
+            raise SystemExit("")
         if script_file is not None:
             script_file.write("%s %s\n" % (prompt, line.encode(charset)))
         try:
