@@ -84,10 +84,9 @@ def complete_url(url):
     return url
 
 
-print encode(u"Connecting to {}\n".format(complete_url(args.url))),
+print encode(u"Connecting to {}\n".format(complete_url(args.url)))
 
 try:
-    print ""
     conn = bofh.connect(url=complete_url(args.url),
                         cert=args.cert,
                         insecure=args.insecure)
@@ -95,14 +94,14 @@ try:
     conn.login(args.user,
                getpass.getpass(u'Password for {}:'.format(args.user)))
 except (KeyboardInterrupt, EOFError):
-    raise SystemExit("")
+    print ""
+    raise SystemExit
 except bofh.proto.BofhError, e:
     raise SystemExit(u'{}'.format(e.args[0]))
 
 try:
     bofh.readlineui.repl(conn, prompt=args.prompt)
 except Exception, e:
-    print repr(e)
     print encode(u'Error: {}'.format(e))
 finally:
     conn.logout()
