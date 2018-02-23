@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright 2010, 2014-2015 University of Oslo, Norway
+# Copyright 2010-2018 University of Oslo, Norway
 #
 # This file is part of PyBofh.
 #
@@ -58,6 +58,7 @@ argp.add_argument('-p', '--prompt',
                   help=u"Custom prompt")
 args = argp.parse_args()
 
+
 def complete_url(url):
     u"""Add default protocol and port number to url if these were omitted
     when entered from the command line. This is not meant to handle all
@@ -82,27 +83,25 @@ def complete_url(url):
             url = ''.join((url, ':', bofh.get_default_port()))
     return url
 
-print encode(u"""This is PyBofh version %s
 
-Copyright (c) 2010, 2014 University of Oslo, Norway
-This is free software; see the source for copying conditions. There is NO
-warranty, not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-""" % bofh.version.version)
+print encode(u"Connecting to {}\n".format(complete_url(args.url)))
 
 try:
     conn = bofh.connect(url=complete_url(args.url),
                         cert=args.cert,
                         insecure=args.insecure)
-    print encode(u'%s\n' % conn.motd)
-    conn.login(args.user, getpass.getpass(u'Password for %s:' % args.user))
-
+    print encode(u'{}\n'.format(conn.motd))
+    conn.login(args.user,
+               getpass.getpass(u'Password for {}:'.format(args.user)))
+except (KeyboardInterrupt, EOFError):
+    print ""
+    raise SystemExit
 except bofh.proto.BofhError, e:
-    raise SystemExit(u'%s' % e.args[0])
+    raise SystemExit(u'{}'.format(e.args[0]))
 
 try:
     bofh.readlineui.repl(conn, prompt=args.prompt)
 except Exception, e:
-    print encode(u'Error: %s' % e)
+    print encode(u'Error: {}'.format(e))
 finally:
     conn.logout()
-
