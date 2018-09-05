@@ -19,11 +19,13 @@
 # along with PyBofh; if not, write to the Free Software Foundation,
 # Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 u"""Patches for httplib to offer certificate and hostname validation."""
+# TODO: Rename file to transport.py?
 
 import socket
 import httplib
 from warnings import warn
-from xmlrpclib import SafeTransport  # TODO: Will this fail without ssl support?
+from xmlrpclib import (SafeTransport,  # TODO: Fails without ssl support?
+                       Transport)
 from sys import version_info as _py_version
 
 DEFAULT_TIMEOUT = socket.getdefaulttimeout()
@@ -144,7 +146,7 @@ class BofhTransport(SafeTransport, object):
             self._validate = bool(kw.pop(u'validate_hostname'))
         except KeyError:
             self._validate = True
-
+        self.timeout = kw.pop('timeout', None)
         super(BofhTransport, self).__init__(*rest, **kw)
 
     def make_connection(self, host):
@@ -164,7 +166,9 @@ class BofhTransport(SafeTransport, object):
             #        an HTTPSConnection object
             ValidatedHTTPS = type('ValidatedHTTPS', tuple(HTTPS.mro()),
                                   dict(_connection_class=cls))
-            return ValidatedHTTPS(chost, None, **(x509 or {}))
+            r = ValidatedHTTPS(chost, None, **(x509 or {}))
+            r.timeout = self.timeout
+            return r
 
         # Only newer versions of xmlrpclib
         if self._connection and host == self._connection[0]:
@@ -172,4 +176,19 @@ class BofhTransport(SafeTransport, object):
 
         self._extra_headers = extra_headers
         self._connection = host, cls(chost, None, **(x509 or {}))
+        self._connection[1].timeout = self.timeout
         return self._connection[1]
+
+
+class UnsafeBofhTransport(Transport, object):
+
+    u""" A transport object that does NOT use ssl. """
+    def __init__(self, timeout=None, use_datetime=0):
+        self.timeout = timeout
+        Transport.__init__(self, use_datetime)
+
+    def make_connection(self, host):
+        conn = Transport.make_connection(self, host)
+        if self.timeout:
+            conn.timeout = self.timeout
+        return conn
