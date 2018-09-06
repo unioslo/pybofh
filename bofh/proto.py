@@ -35,7 +35,8 @@ def _sdt2strftime(format):
             (u"MM", u"%m"),
             (u"dd", u"%d"),
             (u"HH", u"%H"),
-            (u"mm", u"%M"))
+            (u"mm", u"%M"),
+            (u"ss", u"%S"))
     return reduce(lambda form, rep: form.replace(*rep), reps, format)
 
 
