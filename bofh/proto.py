@@ -23,7 +23,7 @@ u"""Module to communicate with bofh server."""
 import xmlrpclib as _rpc
 from urlparse import urlparse
 from . import version
-from .https import BofhTransport
+from .https import (BofhTransport, UnsafeBofhTransport)
 import socket
 import ssl
 
@@ -389,13 +389,13 @@ class Bofh(object):
     see http://cerebrum.sourceforge.net
 
     """
-    def __init__(self, url, cert, insecure=False):
+    def __init__(self, url, cert, insecure=False, timeout=None):
         u"""Connect to a bofh server"""
         self._connection = None
         self._groups = dict()
-        self._connect(url, cert, insecure)
+        self._connect(url, cert, insecure, timeout=timeout)
 
-    def _connect(self, url, cert=None, insecure=False):
+    def _connect(self, url, cert=None, insecure=False, timeout=None):
         u"""Establish a connection with the bofh server"""
         parts = urlparse(url)
 
@@ -403,11 +403,13 @@ class Bofh(object):
             self._connection = _rpc.Server(
                 url,
                 transport=BofhTransport(cert, use_datetime=True,
-                                        validate_hostname=not insecure))
+                                        validate_hostname=not insecure,
+                                        timeout=timeout))
         elif parts.scheme == 'http':
             self._connection = _rpc.Server(
                 url,
-                transport=_rpc.Transport(use_datetime=True))
+                transport=UnsafeBofhTransport(timeout=timeout,
+                                              use_datetime=True))
         else:
             raise BofhError("Unsupported protocol: '%s'" % parts.scheme)
         # Test for valid server connection, handle thrown exceptions.

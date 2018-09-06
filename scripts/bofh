@@ -52,6 +52,11 @@ argp.add_argument('--insecure',
                   default=False,
                   action='store_true',
                   help=u"Do not perform certificate checks.")
+argp.add_argument('--timeout',
+                  default=None,
+                  type=float,
+                  metavar='TIMEOUT',
+                  help=u"Set timeout for network communication.")
 argp.add_argument('-p', '--prompt',
                   default='',
                   metavar='PROMPT',
@@ -89,7 +94,8 @@ print encode(u"Connecting to {}\n".format(complete_url(args.url)))
 try:
     conn = bofh.connect(url=complete_url(args.url),
                         cert=args.cert,
-                        insecure=args.insecure)
+                        insecure=args.insecure,
+                        timeout=args.timeout)
     print encode(u'{}\n'.format(conn.motd))
     conn.login(args.user,
                getpass.getpass(u'Password for {}:'.format(args.user)))

@@ -69,7 +69,7 @@ def get_default_cert():
     return os.path.join(sys.prefix, u'etc/pybofh/ca.pem')
 
 
-def connect(url=None, cert=None, insecure=False):
+def connect(url=None, cert=None, insecure=False, timeout=None):
     u"""Connect to the bofh server, log in, and return a bofh object
 
     :type url: None, str
@@ -83,10 +83,13 @@ def connect(url=None, cert=None, insecure=False):
     :type insecure: bool
     :param insecure: Do not perform certificate checks (hostname validation)
 
+    :type timeout: None, float
+    :param timeout: The socket timeout
+
     :rtype: bofh.proto.Bofh
     :return: New bofh communication object
 
     """
     return proto.Bofh(url or get_default_url(),
                       cert or get_default_cert(),
-                      insecure)
+                      insecure, timeout=timeout)

@@ -79,3 +79,27 @@ Traceback (most recent call last):
     raise BofhError(msg)
 bofh.proto.BofhError: Could not find Account with name=does_not_exist
 ```
+
+### Timeouts
+
+The `bofh.connect()` method accepts a `timeout` argument. This can be used to
+abort from long-running command executions. This however, does not imply that
+the command is aborted on the server side, it will run until completion. If the
+response of the command is essential, do not set a timeout.
+
+When a timeout occurs, `socket.timeout` will be raised.
+
+```python
+import bofh
+import socket
+
+client = bofh.connect(url='https://example.org:8000',
+                      cert='/path/to/ca.pem',
+                      timeout=2)
+client.login(getuser(), getpass())
+
+try:
+    client.user.history('bootstrap_account')
+except socket.timeout:
+    print('Ooops. I did it again.')
+```
