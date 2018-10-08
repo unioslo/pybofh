@@ -37,6 +37,7 @@ Typical usage would look something like:
     Username: user
     ...
 """
+import logging
 import sys
 import os.path
 
@@ -46,6 +47,8 @@ from . import proto
 __all__ = ['internal_commands', 'parser', 'proto', 'readlineui', 'version',
            'get_default_url', 'get_default_protocol', 'get_default_host',
            'get_default_port', 'get_default_cert', 'connect']
+
+logger = logging.getLogger(__name__)
 
 
 def get_default_url():
@@ -98,6 +101,8 @@ def connect(url=None, cert=None, insecure=False, timeout=None):
     :return: New bofh communication object
 
     """
+    logger.debug('connect(url=%r, cert=%r, insecure=%r, timeout=%r)',
+                 url, cert, insecure, timeout)
     return proto.Bofh(url or get_default_url(),
                       cert or get_default_cert(),
                       insecure, timeout=timeout)

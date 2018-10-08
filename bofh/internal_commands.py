@@ -36,8 +36,9 @@ Implemented commands
 - script
 - source
 """
-
 from __future__ import with_statement
+
+import logging
 import os
 
 # Helptexts for the help() function
@@ -48,6 +49,7 @@ _helptexts = {
     u'script': u"script | script filename -- log to file",
     u'source': u"source [--ignore-errors] file -- Read commands from file",
 }
+logger = logging.getLogger(__name__)
 
 
 def help(bofh, *args):
@@ -66,6 +68,7 @@ def help(bofh, *args):
     :param args: command to look up.
     :returns: The help for the args
     """
+    logger.debug('help(%r, *%r)', bofh, args)
     if not args:
         return bofh.help()
     if len(args) == 1:
@@ -89,6 +92,8 @@ def source(bofh, ignore_errors=False, script=None):
     :param ignore_errors: Do not propagate an exception, but continue.
     :param script: The script fie to execute.
     """
+    logger.debug('source(%r, ignore_errors=%r, script=%r',
+                 bofh, ignore_errors, script)
     if not script or not os.path.isfile(script):
         return 'Source file not given or does not exist.'
 
@@ -127,6 +132,7 @@ def script(bofh, file=None):
     :type bofh: bofh.proto.Bofh
     :param file:
     """
+    logger.debug('script(%r, file=%r)', bofh, file)
     from . import readlineui
     if file:
         readlineui.script_file = open(file, "wa")
@@ -149,6 +155,7 @@ def quit(bofh):
     :type bofh: bofh.proto.Bofh
     :raises: SystemExit (always)
     """
+    logger.debug('quit(%r)', bofh)
     import sys
     sys.exit(0)
 
@@ -160,6 +167,7 @@ def commands(bofh):
     :type bofh: bofh.proto.Bofh
     :returns: A prettyprinted list of commands from bofh with args
     """
+    logger.debug('commands(%r)', bofh)
     ret = []
     wide = 0
     for grpname in sorted(bofh.get_bofh_command_keys()):

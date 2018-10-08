@@ -19,6 +19,7 @@
 # Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 """Module to communicate with bofh server."""
 
+import logging
 import socket
 import ssl
 import xmlrpclib as _rpc
@@ -26,6 +27,8 @@ from urlparse import urlparse
 
 from . import version
 from .https import (BofhTransport, UnsafeBofhTransport)
+
+logger = logging.getLogger(__name__)
 
 
 def _sdt2strftime(format):
@@ -74,7 +77,8 @@ def parse_format_suggestion(bofh_response, format_sugg):
     suggestion.
 
     :param bofh_response: Response from bofh, washed with _washresponse
-    :param format_sugg: Format suggestion"""
+    :param format_sugg: Format suggestion
+    """
     # XXX: Explain syntax of format suggestions
     def get_formatted_field(map, field):
         field = field.split(":", 2)

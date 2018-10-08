@@ -18,17 +18,24 @@
 # You should have received a copy of the GNU General Public License
 # along with PyBofh; if not, write to the Free Software Foundation,
 # Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
-
 import getpass
 import locale
+import logging
 from urlparse import urlparse
 
+import bofh.config
+import bofh.proto
 import bofh.readlineui
 import bofh.version
-import bofh.proto
 
+
+logger = logging.getLogger(__name__)
 encoding = locale.getpreferredencoding()
-encode = lambda s, e=encoding: s.encode(e)
+
+
+def encode(s, e=encoding):
+    return s.encode(e)
+
 
 try:
     import argparse
@@ -61,7 +68,19 @@ argp.add_argument('-p', '--prompt',
                   default='',
                   metavar='PROMPT',
                   help=u"Custom prompt")
+argp.add_argument('-v', '--verbosity',
+                  dest='verbosity',
+                  action='count',
+                  default=None,
+                  help=u"Enable debug logging to stderr")
 args = argp.parse_args()
+
+
+if args.verbosity is not None:
+    level = bofh.config.get_verbosity(args.verbosity - 1)
+    bofh.config.configure_logging(level)
+
+logger.debug('args: %r', args)
 
 
 def complete_url(url):
