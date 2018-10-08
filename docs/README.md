@@ -14,6 +14,18 @@ make html
 ```
 
 
+### Build PDFs on Fedora
+
+```
+dnf install \
+    texlive-collection-fontsrecommended \
+    texlive-collection-latexrecommended \
+    texlive-collection-latexextra \
+    latexmk
+make latexpdf
+```
+
+
 ## Structure
 
 * Generic documentation goes in `source/`
