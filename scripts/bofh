@@ -31,6 +31,7 @@ import bofh.version
 
 logger = logging.getLogger(__name__)
 encoding = locale.getpreferredencoding()
+dist_info = bofh.version.get_distribution()
 
 
 def encode(s, e=encoding):
@@ -73,6 +74,9 @@ argp.add_argument('-v', '--verbosity',
                   action='count',
                   default=None,
                   help=u"Enable debug logging to stderr")
+argp.add_argument('--version',
+                  action='version',
+                  version=str(dist_info))
 args = argp.parse_args()
 
 

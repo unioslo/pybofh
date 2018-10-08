@@ -70,19 +70,10 @@ class PyTest(setuptools.command.test.test):
         raise SystemExit(errno)
 
 
-def get_version():
-    try:
-        from bofh.version import version
-        return version
-    except Exception:
-        return u'unknown'
-
-
 def main():
-    setup_requirements = []  # ['setuptools_scm']
+    setup_requirements = ['setuptools_scm']
     test_requirements = list(get_requirements('requirements-test.txt'))
     install_requirements = list(get_requirements('requirements.txt'))
-    version = get_version()
 
     if {'build_sphinx', 'upload_docs'}.intersection(sys.argv):
         # Sphinx modules:
@@ -100,7 +91,7 @@ def main():
         author='USIT, University of Oslo',
         author_email='bnt-int@usit.uio.no',
 
-        version=version,
+        use_scm_version=True,
         packages=get_packages(),
         scripts=['scripts/bofh', 'scripts/passwd'],
         setup_requires=setup_requirements,
