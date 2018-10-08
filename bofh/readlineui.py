@@ -23,12 +23,16 @@ Interactive bofh client.
 This module implements a REPL for implementing an interactive bofh client, and
 readline command completion.
 """
+from __future__ import print_function
 
 import getpass
 import locale
+import logging
 import readline
 
 from . import parser, proto
+
+logger = logging.getLogger(__name__)
 
 
 class BofhCompleter(object):
@@ -148,7 +152,7 @@ def prompter(prompt, mapping, help, default, argtype=None, optional=False):
         mapstr = u"\n".join(mapstr)
     while True:
         if map:
-            print mapstr
+            print(mapstr)
         # get input from user
         val = inputfunc(_prompt).strip().decode(locale.getpreferredencoding())
         # Lines read at this stage, are params to a command.
@@ -170,9 +174,9 @@ def prompter(prompt, mapping, help, default, argtype=None, optional=False):
         # Print some help text
         elif val == u'?':
             if help is None:
-                print u"Sorry, no help available"
+                print(u"Sorry, no help available")
             else:
-                print help
+                print(help)
         else:
             # if mapping, return the corresponding key,
             # else just return what the user typed.
@@ -183,9 +187,9 @@ def prompter(prompt, mapping, help, default, argtype=None, optional=False):
                         raise IndexError("Negative")
                     return map[i-1]
                 except ValueError:
-                    print u"Please type a number matching one of the items"
+                    print(u"Please type a number matching one of the items")
                 except IndexError:
-                    print u"The item you selected does not exist"
+                    print(u"The item you selected does not exist")
             else:
                 return val
 
@@ -219,15 +223,18 @@ def repl(bofh, charset=None, prompt=None):
         # read input
         try:
             line = raw_input(prompt.encode(charset)).decode(charset)
+            logger.debug('got input %r', line)
             # If we get a blank line, we just continue
             if not line:
                 continue
         except EOFError:
-            print "So long, and thanks for all the fish!"
+            logger.debug('got EOFError')
+            print("So long, and thanks for all the fish!")
             return
         except KeyboardInterrupt:
-            print ""
-            raise SystemExit
+            logger.debug('got KeyboardInterrupt')
+            print("")
+            raise SystemExit()
         if script_file is not None:
             script_file.write("%s %s\n" % (prompt, line.encode(charset)))
         try:
@@ -239,26 +246,33 @@ def repl(bofh, charset=None, prompt=None):
                 result = u'\n\n'.join(result)
 
             # print
-            print result.encode(charset)
+            print(result.encode(charset))
             if script_file is not None:
                 script_file.write(result.encode(charset))
                 script_file.write(u"\n".encode(charset))
-        except SystemExit:  # raised in internal_commands.quit()
-            # XXX: Output some message?
+        except SystemExit:
+            # raised in internal_commands.quit()
+            logger.debug('got SystemExit')
+            # TODO/TBD: Output some message?
             raise
-        except proto.SessionExpiredError, e:
+        except proto.SessionExpiredError as e:
+            logger.debug(e)
             # Session expired, relogin.
-            print "Session expired, you need to reauthenticate"
+            print("Session expired, you need to reauthenticate")
             pw = getpass.getpass()
             bofh.login(None, pw, init=False)
-        except proto.BofhError, e:
+        except proto.BofhError as e:
+            logger.debug(e)
             # Error from the bofh server
-            print e.args[0].encode(charset)
+            print(e.args[0].encode(charset))
         except EOFError:   # Sent from prompt func. Just ask for new command
-            print
-        except parser.SynErr, e:
-            print unicode(e).encode(charset)
-        except:
+            logger.debug('EOFError')
+            print()
+        except parser.SynErr as e:
+            logger.error(e)
+            print(unicode(e).encode(charset))
+        except Exception:
+            logger.exception('Unhandled exception')
             # Unknown exception, handle this
             # XXX: Handle parse errors
             import traceback

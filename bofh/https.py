@@ -1,7 +1,6 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright 2014 University of Oslo, Norway
+# Copyright 2014-2018 University of Oslo, Norway
 #
 # This file is part of PyBofh.
 #
@@ -18,27 +17,28 @@
 # You should have received a copy of the GNU General Public License
 # along with PyBofh; if not, write to the Free Software Foundation,
 # Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
-u"""Patches for httplib to offer certificate and hostname validation."""
+"""Patches for httplib to offer certificate and hostname validation."""
 # TODO: Rename file to transport.py?
 
+import logging
 import socket
 import httplib
 from warnings import warn
-from xmlrpclib import (SafeTransport,  # TODO: Fails without ssl support?
-                       Transport)
+from xmlrpclib import (SafeTransport, Transport)
 from sys import version_info as _py_version
 
 DEFAULT_TIMEOUT = socket.getdefaulttimeout()
-u""" Default global timeout. """
+""" Default global timeout. """
+
+logger = logging.getLogger(__name__)
 
 
 def _create_connection(address, timeout=DEFAULT_TIMEOUT,
                        source_address=None):
-    u""" Python 2.5 socket creation.
+    """ Python 2.5 socket creation.
 
     This is an implementation of `socket.create_connection' from PY>=26 for use
     in PY<26.
-
     """
     host, port = address
     err = socket.error(u"getaddrinfo returns an empty list")
@@ -62,6 +62,7 @@ def _create_connection(address, timeout=DEFAULT_TIMEOUT,
             continue
     raise err
 
+
 try:
     import ssl
 
@@ -76,7 +77,7 @@ try:
 
     class ValidatedHTTPSConnection(httplib.HTTPSConnection, object):
 
-        u""" Re-implementation of HTTPSConnection.connect to support cert validation
+        """ Re-implementation of HTTPSConnection.connect to support cert validation
 
         This class re-implements the connect method of httplib.HTTPSConnection,
         so that it can perform certificate validation, and hostname validation.
@@ -84,7 +85,7 @@ try:
         """
 
         ca_file = None
-        u""" Set ca_file to validate server certificate.
+        """ Set ca_file to validate server certificate.
 
         This should be a file containing all the certificates, in PEM format,
         for all the chains-of-trust that is accepted.
@@ -92,10 +93,10 @@ try:
         """
 
         do_match_hostname = True
-        u""" Whether to match hostname when validating server certificate. """
+        """ Whether to match hostname when validating server certificate. """
 
         def connect(self):
-            u""" Wrap socket properly. """
+            """ Wrap socket properly. """
             sock = None
             source_addr = getattr(self, 'source_address', None)
             timeout = getattr(self, 'timeout', DEFAULT_TIMEOUT)
@@ -125,9 +126,7 @@ try:
                 match_hostname(self.sock.getpeercert(), self.host)
 
     class HTTPS(httplib.HTTPS, object):
-
-        """ New style HTTPS class. """
-
+        """New-style HTTPS class"""
         # This will give us the object.mro() type method
         pass
 
@@ -137,8 +136,9 @@ except ImportError:
 
 
 class BofhTransport(SafeTransport, object):
-
-    u""" A transport object that supports proper ssl. """
+    """
+    A transport object that supports proper ssl.
+    """
 
     def __init__(self, cert, *rest, **kw):
         self._cert = cert
@@ -164,9 +164,10 @@ class BofhTransport(SafeTransport, object):
         if _py_version[0:2] < (2, 7):
             # Note – Starting with the release of 2.7, make_connection returns
             #        an HTTPSConnection object
-            ValidatedHTTPS = type('ValidatedHTTPS', tuple(HTTPS.mro()),
-                                  dict(_connection_class=cls))
-            r = ValidatedHTTPS(chost, None, **(x509 or {}))
+            validated_https_cls = type('ValidatedHTTPS',
+                                       tuple(HTTPS.mro()),
+                                       dict(_connection_class=cls))
+            r = validated_https_cls(chost, None, **(x509 or {}))
             r.timeout = self.timeout
             return r
 
@@ -181,8 +182,9 @@ class BofhTransport(SafeTransport, object):
 
 
 class UnsafeBofhTransport(Transport, object):
-
-    u""" A transport object that does NOT use ssl. """
+    """
+    A transport object that does NOT use ssl.
+    """
     def __init__(self, timeout=None, use_datetime=0):
         self.timeout = timeout
         Transport.__init__(self, use_datetime)

@@ -26,6 +26,9 @@ interactive python client.
 Parsing input commands are neccessary in order to e.g. provide command
 completion.
 """
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class SynErr(Exception):
@@ -242,6 +245,8 @@ def _parse_bofh_command(bofh, fullgrp, group, start, lex, line):
     :returns: A new :class:`BofhCommand` object
     :raises: SynErr
     """
+    logger.debug('_parse_bofh_command(%r, %r, %r, %r, %r, %r)',
+                 bofh, fullgrp, group, start, lex, line)
     # Setup return object
     grp = getattr(bofh, fullgrp)
     ret = BofhCommand(bofh, line)  # XXX: Args
@@ -285,6 +290,8 @@ def _parse_bofh_command(bofh, fullgrp, group, start, lex, line):
 
 def _parse_help(bofh, fullgrp, group, start, lex, line):
     """Parse the help command"""
+    logger.debug('_parse_help(%r, %r, %r, %r, %r, %r)',
+                 bofh, fullgrp, group, start, lex, line)
     ret = HelpCommand(bofh, line)
     ret.append(group, start, [fullgrp])
     args = []
@@ -352,6 +359,8 @@ def _parse_help(bofh, fullgrp, group, start, lex, line):
 
 def _parse_script(bofh, fullgrp, group, start, lex, line):
     """Parse script internal command"""
+    logger.debug('_parse_script(%r, %r, %r, %r, %r, %r)',
+                 bofh, fullgrp, group, start, lex, line)
     ret = InternalCommand(bofh, line)
     ret.append(group, start, [fullgrp])
     args = []
@@ -376,6 +385,8 @@ def _parse_script(bofh, fullgrp, group, start, lex, line):
 
 def _parse_source(bofh, fullgrp, group, start, lex, line):
     """Parse source internal command"""
+    logger.debug('_parse_source(%r, %r, %r, %r, %r, %r)',
+                 bofh, fullgrp, group, start, lex, line)
     ret = InternalCommand(bofh, line)
     ret.append(group, start, [fullgrp])
     args = []
@@ -412,6 +423,8 @@ def _parse_source(bofh, fullgrp, group, start, lex, line):
 
 def _parse_single(bofh, fullgrp, group, start, lex, line):
     """Parse an internal command taking no args"""
+    logger.debug('_parse_single(%r, %r, %r, %r, %r, %r)',
+                 bofh, fullgrp, group, start, lex, line)
     return SingleCommand(bofh, fullgrp, group, start, line)
 
 
@@ -428,8 +441,11 @@ _internal_cmds = {
 
 
 def parse(bofh, text):
-    """Parses a command
-    :text: A (unicode) object to parse"""
+    """
+    Parses a command
+
+    :text: A (unicode) object to parse
+    """
     lex = lexer(text)
     initial = bofh.get_bofh_command_keys()
     allcmds = initial + _internal_cmds.keys()
