@@ -1,7 +1,6 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright 2010 University of Oslo, Norway
+# Copyright 2010-2018 University of Oslo, Norway
 #
 # This file is part of PyBofh.
 #
@@ -18,22 +17,31 @@
 # You should have received a copy of the GNU General Public License
 # along with PyBofh; if not, write to the Free Software Foundation,
 # Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+"""
+The bofh library
+----------------
 
-u"""The PyBofh package
+The bofh library is an XMLRPC client library for Cerebrum, and the main
+component of the pybofh distribution.
 
-Normally, you should get a bofh object by calling ``obj = connect(user, pass)``,
-and play with this.
+This library can be used to automate common use cases of the pybofh cli script.
 
->>> obj = connect('user', 'pass')
->>> obj.motd
-Message of the day
->>> obj.user.info('user')
-Username: user
-...
+Typical usage would look something like:
+
+::
+
+    >>> obj = connect('user', 'pass')
+    >>> obj.motd
+    Message of the day
+    >>> obj.user.info('user')
+    Username: user
+    ...
 """
 import sys
 import os.path
+
 from . import proto
+
 
 __all__ = ['internal_commands', 'parser', 'proto', 'readlineui', 'version',
            'get_default_url', 'get_default_protocol', 'get_default_host',
@@ -41,7 +49,7 @@ __all__ = ['internal_commands', 'parser', 'proto', 'readlineui', 'version',
 
 
 def get_default_url():
-    u"""Get default url for connecting to bofh"""
+    """Get default url for connecting to bofh"""
     # TODO: This should be configurable
     return u'%s://%s:%s' % (get_default_protocol(),
                             get_default_host(),
@@ -49,28 +57,28 @@ def get_default_url():
 
 
 def get_default_protocol():
-    u"""Get default protocol for connecting to bofh"""
+    """Get default protocol for connecting to bofh"""
     return u'https'
 
 
 def get_default_host():
-    u"""Get default host for connecting to bofh"""
+    """Get default host for connecting to bofh"""
     return u'cerebrum-uio.uio.no'
 
 
 def get_default_port():
-    u"""Get default port for connecting to bofh"""
+    """Get default port for connecting to bofh"""
     return u'8000'
 
 
 def get_default_cert():
-    u"""Get default certificate"""
+    """Get default certificate"""
     # TODO: Should this be configurable? It depends on setup.py
     return os.path.join(sys.prefix, u'etc/pybofh/ca.pem')
 
 
 def connect(url=None, cert=None, insecure=False, timeout=None):
-    u"""Connect to the bofh server, log in, and return a bofh object
+    """Connect to the bofh server, log in, and return a bofh object
 
     :type url: None, str
     :param url: Some url, or None for default url.
