@@ -93,7 +93,7 @@ def main():
 
         use_scm_version=True,
         packages=get_packages(),
-        scripts=['scripts/bofh', 'scripts/passwd'],
+        scripts=['scripts/bofh'],
         setup_requires=setup_requirements,
         install_requires=install_requirements,
         tests_require=test_requirements,
