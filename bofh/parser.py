@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-
-# Copyright 2010 University of Oslo, Norway
+#
+# Copyright 2010-2018 University of Oslo, Norway
 #
 # This file is part of PyBofh.
 #
@@ -17,12 +17,20 @@
 # You should have received a copy of the GNU General Public License
 # along with PyBofh; if not, write to the Free Software Foundation,
 # Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+"""
+Implementation of the input command parsing in bofh.
 
-u"""The PyBofh command parser"""
+This module implements the input parsing of command strings entered into the
+interactive python client.
+
+Parsing input commands are neccessary in order to e.g. provide command
+completion.
+"""
 
 
 class SynErr(Exception):
-    u"""Syntax error. Base class for syntax errors"""
+    """Syntax error. Base class for syntax errors"""
+
     def __init__(self, msg, index=None):
         super(SynErr, self).__init__(msg)
         self.index = index
@@ -35,7 +43,8 @@ class SynErr(Exception):
 
 
 class IncompleteParse(SynErr):
-    u"""Parser ran off end without finding matching " or )"""
+    """Parser ran off end without finding matching " or )"""
+
     def __init__(self, msg, parse, expected):
         super(IncompleteParse, self).__init__(msg, -1)
         self.parse = parse
@@ -43,7 +52,8 @@ class IncompleteParse(SynErr):
 
 
 class NoGroup(SynErr):
-    u"""The group didn't match any defined command"""
+    """The group didn't match any defined command"""
+
     def __init__(self, parse, completions):
         super(NoGroup, self).__init__(u"No matching command", 0)
         self.parse = parse
@@ -52,6 +62,7 @@ class NoGroup(SynErr):
 
 class Command(object):
     """Base class for commands returned by :func:`parse`"""
+
     def __init__(self, bofh, line):
         self.args = []
         self.bofh = bofh
@@ -88,21 +99,26 @@ class Command(object):
 
     def eval(self, prompter=None):
         """Evaluate the parsed expression.
-        prompter: Callable to get single input item
+
+        :param prompter: Callable to get single input item
         """
-        return u"Command: «%s» not implemented" % u" ".join(map(lambda x: x[0], self.args))
+        return (u"Command: «%s» not implemented" %
+                u" ".join(map(lambda x: x[0], self.args)))
 
     def call(self):
         return self.eval()
 
 
 class BofhCommand(Command):
-    u"""A command object for a bofh command"""
-    def set_command(self, command):
-        u"""Set the actual command
+    """
+    Representation of a bofh command
+    """
 
-        :param command: The command to set (returned from bofh object)
+    def set_command(self, command):
+        """Set the actual command
+
         :type command: bofh.proto._Command
+        :param command: The command to set (returned from bofh object)
         """
         self.command = command
 
@@ -123,7 +139,8 @@ class BofhCommand(Command):
 
     def eval(self, prompter=None, *rest, **kw):
         """Evaluate the parsed expression.
-        prompter: Callable to get single input item
+
+        :param prompter: Callable to get single input item
         """
         args = self.get_args()
         try:
@@ -134,6 +151,7 @@ class BofhCommand(Command):
 
 class InternalCommand(Command):
     """A command object for an internal command."""
+
     def eval(self, *rest, **kw):
         """Find the command in :module:`bofh.internal_commands`, and call it"""
         from . import internal_commands as where
@@ -145,6 +163,7 @@ class InternalCommand(Command):
 
 class HelpCommand(InternalCommand):
     """Help command"""
+
     def get_args(self):
         """Get the args as a list of strings"""
         ret = []
@@ -250,7 +269,7 @@ def _parse_bofh_command(bofh, fullgrp, group, start, lex, line):
                 if e.parse:
                     arg, idx = e.parse
                     ret.append(arg, idx, ArgCompleter(expected))
-                ## XXX: use e.completions?
+                # TODO/TBD: use e.completions?
                 ret.append(u"", -1, ArgCompleter(expected))
         try:
             while True:
@@ -291,8 +310,16 @@ def _parse_help(bofh, fullgrp, group, start, lex, line):
 
         def match_item(cmd, expected):
             if isinstance(cmd[0], (list, tuple)):
-                return map(lambda x: match_item(x, expected), cmd[0]), cmd[1], []
-            return cmd[0], cmd[1], filter(lambda x: x.startswith(cmd[0]), expected)
+                return (
+                    map(lambda x: match_item(x, expected), cmd[0]),
+                    cmd[1],
+                    [],
+                )
+            return (
+                cmd[0],
+                cmd[1],
+                filter(lambda x: x.startswith(cmd[0]), expected),
+            )
 
         cmd, idx, completes = match_item(args[0], allcmds)
         ret.append(cmd, idx, completes)
@@ -307,15 +334,15 @@ def _parse_help(bofh, fullgrp, group, start, lex, line):
                     bofhcmds = grp.get_bofh_command_keys()
                     cmd, idx, completes = match_item(args[1], bofhcmds)
                     ret.append(cmd, idx, completes)
-                    #if len(completes) == 1:
-                    #    ret.set_help_for(grp.get_bofh_command_value(*completes))
+                    # if len(completes) == 1:
+                    #     ret.set_help_for(grp.get_bofh_command_value(*completes))
                 else:
                     ret.append(None, -1, grp.get_bofh_command_keys())
-                    #ret.set_help_for(grp)
+                    # ret.set_help_for(grp)
             elif completes[0] in _internal_cmds:
                 if len(args) == 1:
                     pass
-                    #ret.set_help_str(_internal_help(*completes[0]))
+                    # ret.set_help_str(_internal_help(*completes[0]))
                 else:
                     raise SynErr(u"Too many arguments for help", args[1][1])
             else:
@@ -387,13 +414,16 @@ def _parse_single(bofh, fullgrp, group, start, lex, line):
     """Parse an internal command taking no args"""
     return SingleCommand(bofh, fullgrp, group, start, line)
 
+
 # table of internal commands, see also internal_commands.py
+# TODO: This should probably be linked with internal_commands in some other
+#       way?
 _internal_cmds = {
+    u'commands': _parse_single,
     u'help': _parse_help,
-    u'source': _parse_source,
-    u'script': _parse_script,
     u'quit': _parse_single,
-    u'commands': _parse_single
+    u'script': _parse_script,
+    u'source': _parse_source,
 }
 
 
@@ -417,7 +447,8 @@ def parse(bofh, text):
         return _parse_bofh_command(bofh, fullgrp, group, idx, lex, text)
 
     if solematch:
-        return _internal_cmds.get(fullgrp)(bofh, fullgrp, group, idx, lex, text)
+        _parse_match = _internal_cmds.get(fullgrp)
+        return _parse_match(bofh, fullgrp, group, idx, lex, text)
 
     rest = [i for i in lex]
     rest.insert(0, (group, idx))
@@ -461,8 +492,10 @@ def parse_string_or_list(lex):
         # parse until we get a )
         ret = []
         for val, idx in lex:
-            if idx == -1:  # signals missing char after \ or missing matching ".
-                try:  # gets either ", -1 or some last token
+            if idx == -1:
+                # signals missing char after \ or missing matching ".
+                try:
+                    # gets either ", -1 or some last token
                     val1, idx1 = lex.next()
                 except StopIteration:  # no last token
                     raise IncompleteParse(u"Expected %s, got nothing" % (
@@ -472,14 +505,18 @@ def parse_string_or_list(lex):
                         val1, idx1 = lex.next()
                         ret.append((val1, idx1))
                         raise IncompleteParse(
-                            u"Expected something and \", got nothing", ret, [u' ")'])
+                            u"Expected something and \", got nothing",
+                            ret, [u' ")'])
                     except StopIteration:
                         raise IncompleteParse(
-                            u"Expected something and \", got nothing", ret, [u' ")'])
-                else:  # val1, idx1 holds the last token
+                            u"Expected something and \", got nothing",
+                            ret, [u' ")'])
+                else:
+                    # val1, idx1 holds the last token
                     ret.append((val1, idx1))
                     raise IncompleteParse(
-                        u"Expected %s, got nothing" % (u"something" if val == u"\\" else u')'),
+                        u"Expected %s, got nothing" %
+                        (u"something" if val == u"\\" else u')'),
                         ret, [u' )' if val == u"\\" else u'")'])
             elif val == u'(':
                 # we don't know what to do
@@ -492,24 +529,30 @@ def parse_string_or_list(lex):
     try:
         val, idx = lex.next()
     except StopIteration:
-        raise IncompleteParse(u"Expected string or list, got nothing", None, [])
+        raise IncompleteParse(
+            u"Expected string or list, got nothing", None, [])
     if idx == -1:
         try:
             val1, idx1 = lex.next()
         except StopIteration:  # no last token
             raise IncompleteParse(
-                u"Expected %s, got nothing" % (u"something" if val == u'\\' else u'"'),
+                u"Expected %s, got nothing" %
+                (u"something" if val == u'\\' else u'"'),
                 None, [u' ' if val == u'\\' else u'"'])
         if idx1 == -1:  # signal we want both a \ ending and a "
             try:  # check if the last token waits.
                 val1, idx1 = lex.next()
                 raise IncompleteParse(
-                    u"Expected something and \", got nothing", (val1, idx1), [u' "'])
+                    u"Expected something and \", got nothing",
+                    (val1, idx1), [u' "'])
             except StopIteration:
-                raise IncompleteParse(u"Expected something and \", got nothing", None, [u' "'])
+                raise IncompleteParse(
+                    u"Expected something and \", got nothing",
+                    None, [u' "'])
         else:  # val1, idx1 holds the last token
             raise IncompleteParse(
-                u"Expected %s, got nothing" % (u"something" if val == u"\\" else u')'),
+                u"Expected %s, got nothing" %
+                (u"something" if val == u"\\" else u')'),
                 (val1, idx1), [u' ' if val == u'\\' else u'"'])
     elif val == u'(':
         try:
@@ -558,7 +601,7 @@ def lexer(text):
             if ret:
                 yield u''.join(ret), start
                 ret = []
-                #yield u' ', i
+                # yield u' ', i
         elif cur == u'\\':
             backslash = True
         else:

@@ -1,7 +1,6 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-# Copyright 2010-2016 University of Oslo, Norway
+#
+# Copyright 2010-2018 University of Oslo, Norway
 #
 # This file is part of PyBofh.
 #
@@ -18,8 +17,12 @@
 # You should have received a copy of the GNU General Public License
 # along with PyBofh; if not, write to the Free Software Foundation,
 # Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+"""
+Interactive bofh client.
 
-u"""Readline user interface for PyBofh."""
+This module implements a REPL for implementing an interactive bofh client, and
+readline command completion.
+"""
 
 import getpass
 import locale
@@ -28,15 +31,17 @@ import readline
 from . import parser, proto
 
 
-class bofhcompleter(object):
-    u"""Completer functor for bofh completion.
+class BofhCompleter(object):
+    """
+    Completer functor for bofh completion.
 
     An instance of this class should be usable as a completer
     to send to GNU readline.
     """
 
     def __init__(self, bofh, encoding):
-        u"""Create a bofhcompleter object.
+        """
+        Create a bofhcompleter object.
 
         :param bofh: The bofh object.
         :param encoding: The encoding used
@@ -47,7 +52,7 @@ class bofhcompleter(object):
         self.encoding = encoding
 
     def __call__(self, text, num):
-        u"""Complete a text.
+        """Complete a text.
 
         Readline will call this repeatedly with the
         same text parameter, and an increasing num
@@ -93,13 +98,16 @@ class bofhcompleter(object):
 
 
 script_file = None
-u"""script_file is set to a file if commands should be logged.
+"""script_file is set to a file if commands should be logged.
 XXX: this should be moved elsewhere."""
 
 
 def prompter(prompt, mapping, help, default, argtype=None, optional=False):
-    u"""A promter function. This is used for asking for more
-    arguments, or when arguments are given with prompt_func in bofh.
+    """
+    A promter function.
+
+    This is used for asking for more arguments, or when arguments are
+    given with prompt_func in bofh.
 
     This function is supplied to the evaluator returned from
     :func:`bofh.parser.parse`, and usually called from the command
@@ -183,7 +191,8 @@ def prompter(prompt, mapping, help, default, argtype=None, optional=False):
 
 
 def repl(bofh, charset=None, prompt=None):
-    u"""Read Eval Print Loop
+    """
+    Read Eval Print Loop
 
     The function of this is to
 
@@ -205,7 +214,7 @@ def repl(bofh, charset=None, prompt=None):
     if charset is None:
         charset = locale.getpreferredencoding()
     readline.parse_and_bind("tab: complete")
-    readline.set_completer(bofhcompleter(bofh, charset))
+    readline.set_completer(BofhCompleter(bofh, charset))
     while True:
         # read input
         try:

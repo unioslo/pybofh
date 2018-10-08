@@ -1,7 +1,6 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-# Copyright 2010-2015 University of Oslo, Norway
+#
+# Copyright 2010-2018 University of Oslo, Norway
 #
 # This file is part of PyBofh.
 #
@@ -18,14 +17,15 @@
 # You should have received a copy of the GNU General Public License
 # along with PyBofh; if not, write to the Free Software Foundation,
 # Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
-u"""Module to communicate with bofh server."""
+"""Module to communicate with bofh server."""
 
-import xmlrpclib as _rpc
-from urlparse import urlparse
-from . import version
-from .https import (BofhTransport, UnsafeBofhTransport)
 import socket
 import ssl
+import xmlrpclib as _rpc
+from urlparse import urlparse
+
+from . import version
+from .https import (BofhTransport, UnsafeBofhTransport)
 
 
 def _sdt2strftime(format):
@@ -41,7 +41,9 @@ def _sdt2strftime(format):
 
 
 def _washresponse(resp):
-    """Wash response
+    """
+    Wash response
+
     Walk down any objects in response (we can get strings, dicts and lists),
     and make sure any strings are unicode. Also, we code None as ':None',
     and escapes other colon at start of string with an extra colon
@@ -67,8 +69,9 @@ def _washresponse(resp):
 
 
 def parse_format_suggestion(bofh_response, format_sugg):
-    """Transform a response from bofh to a string after
-    the spec of a format suggestion.
+    """
+    Transform a response from bofh to a string after the spec of a format
+    suggestion.
 
     :param bofh_response: Response from bofh, washed with _washresponse
     :param format_sugg: Format suggestion"""
@@ -194,7 +197,8 @@ class _Command(object):
     def _get_format_suggestion(self):
         """Get format suggestion for command"""
         if self._format_suggestion is None:
-            self._format_suggestion = self._bofh.get_format_suggestion(self._fullname)
+            self._format_suggestion = self._bofh.get_format_suggestion(
+                self._fullname)
         return self._format_suggestion
     format_suggestion = property(_get_format_suggestion,
                                  doc=u"Get format suggestion")
@@ -266,18 +270,25 @@ class _Command(object):
         return None
 
     def _prompt_func(self, prompt_func, *rest, **kw):
-        # 1. call_prompt_func with *rest -> 
-        #   {prompt: string, help_ref: key, last_arg: bool, default: None or value,
-        #    map: None or [[["Header", None], value], [[format, *args], value], ...],
+        # 1. call_prompt_func with *rest ->
+        #   {prompt: string,
+        #    help_ref: key,
+        #    last_arg: bool,
+        #    default: None or value,
+        #    map: None or [[["Header", None], value],
+        #                  [[format, *args], value],
+        #                  ...],
         #    raw: bool}
         # 2. if prompt is None and last_arg is true, return rest
         # 3. if map is not None, transform map into:
-        #    newmap = [(None, map[0][0]),       # header
-        #              (i if raw else map[i][1], map[i][0][0] % map[i][0][1]), ...]
-        # 4. prompt using string, and, if set, [default], i.e. 
+        #    newmap = [
+        #        (None, map[0][0]),       # header
+        #        (i if raw else map[i][1], map[i][0][0] % map[i][0][1]), ...]
+        # 4. prompt using string, and, if set, [default], i.e.
         #       prompt_func(prompt, newmap, help text, default)
         # 5. if last_arg is true, return args with appended ans.
-        # 6. User's answer is handled by prompt func, append arg to rest and restart.
+        # 6. User's answer is handled by prompt func, append arg to rest and
+        #    restart.
         args = list(rest)
         try:
             result = self._bofh.call_prompt_func(self._fullname, *rest)
@@ -319,15 +330,19 @@ class _Command(object):
 
     @property
     def args(self):
-        """Return information about each arg
-        Returns a list of dicts: {
-            optional: True if optional
-            repeat: True if arg is repeatable
-            default: string or True if get_default_param should be called
-            type: arg type
-            help_ref: string to send to help_ref
-            prompt: Text to send to prompter for arg
-        }"""
+        """
+        Return information about each arg
+
+        :return list:
+            Returns a list of dicts, where each dict has keys:
+
+            - optional: True if optional
+            - repeat: True if arg is repeatable
+            - default: string or True if get_default_param should be called
+            - type: arg type
+            - help_ref: string to send to help_ref
+            - prompt: Text to send to prompter for arg
+        """
         if hasattr(self, '_fixed_args'):
             return self._fixed_args
         if isinstance(self._args, basestring):
@@ -360,14 +375,14 @@ class _CommandGroup(object):
 
 
 class BofhError(Exception):
-    u"""Exceptions from bofhd"""
+    """Exceptions from bofhd"""
     def __init__(self, message, cont=None):
         self.cont = cont
         super(BofhError, self).__init__(message)
 
 
 class SessionExpiredError(BofhError):
-    u"""Session has expired.
+    """Session has expired.
 
     This should probably be handled like this:
 
@@ -383,20 +398,21 @@ class SessionExpiredError(BofhError):
 
 
 class Bofh(object):
-    u"""A bofh communication object.
+    """
+    A bofh communication object.
 
     Bofh performs xmlrpc calls to a remote bofhd server,
-    see http://cerebrum.sourceforge.net
-
+    see `<https://www.usit.uio.no/om/tjenestegrupper/cerebrum/>`_.
     """
+
     def __init__(self, url, cert, insecure=False, timeout=None):
-        u"""Connect to a bofh server"""
+        """Connect to a bofh server"""
         self._connection = None
         self._groups = dict()
         self._connect(url, cert, insecure, timeout=timeout)
 
     def _connect(self, url, cert=None, insecure=False, timeout=None):
-        u"""Establish a connection with the bofh server"""
+        """Establish a connection with the bofh server"""
         parts = urlparse(url)
 
         if parts.scheme == 'https':
@@ -421,7 +437,7 @@ class Bofh(object):
             raise BofhError(e)
 
     def _run_raw_command(self, name, *args):
-        u"""Run a command on the server"""
+        """Run a command on the server"""
         fn = getattr(self._connection, name)
 
         args = self.format_args(args)
@@ -445,7 +461,7 @@ class Bofh(object):
             raise
 
     def _run_raw_sess_command(self, name, *args):
-        u"""Run a command on the server, using the session_id."""
+        """Run a command on the server, using the session_id."""
         fn = getattr(self._connection, name)
 
         args = self.format_args(args)
@@ -471,8 +487,12 @@ class Bofh(object):
         return run_command()
 
     def format_args(self, args):
-        u"""Add additional ':' if an argument is a basestring and starts with 
-        ':', as this will get sliced off by xmlutils.py in backend."""
+        """
+        Format special arguments.
+
+        Add additional ':' if an argument is a basestring and starts with ':',
+        as this will get sliced off by xmlutils.py in backend.
+        """
         argslist = list(args)
         pos = 0
         for arg in argslist:
@@ -487,7 +507,8 @@ class Bofh(object):
     # logout(session)
     # get_commands(session) -- see _init_commands
     # help(session) -- general help
-    # help(session, "arg_help", ref) -- help on arg type, ref found in arg['help_ref']
+    # help(session, "arg_help", ref) -- help on arg type,
+    #                                   ref found in arg['help_ref']
     # help(session, group) -- help on group
     # help(session, group, cmd) -- help on command
     # run_command(session, command, args)  # command = group_cmd
@@ -499,12 +520,12 @@ class Bofh(object):
     # get_format_suggestion(command)
 
     def get_motd(self, client=u"PyBofh", version=version.version):
-        u"""Get (and cache) message of the day from server"""
+        """Get (and cache) message of the day from server"""
         self._motd = _washresponse(self._connection.get_motd(client, version))
         return self._motd
 
     def login(self, user, password, init=True):
-        u"""Log in to server"""
+        """Log in to server"""
         if user is None:
             user = self._username
         else:
@@ -520,50 +541,50 @@ class Bofh(object):
         # XXX bring down all commands
 
     def get_commands(self):
-        u"""Get commands user can operate on"""
+        """Get commands user can operate on"""
         return self._run_raw_sess_command("get_commands")
 
     def help(self, *args):
-        u"""Get help"""
+        """Get help"""
         return self._run_raw_sess_command("help", *args)
 
     def arg_help(self, help_ref):
-        u"""Get help on argument"""
+        """Get help on argument"""
         return self.help("arg_help", help_ref)
 
     def run_command(self, command, *args):
-        u"""Run a regular command"""
+        """Run a regular command"""
         return self._run_raw_sess_command("run_command", command, *args)
 
     def call_prompt_func(self, command, *args):
-        u"""Call prompt_func"""
+        """Call prompt_func"""
         return self._run_raw_sess_command("call_prompt_func", command, *args)
 
     def get_default_param(self, command, *args):
-        u"""Get default value for param.
+        """
+        Get default value for param.
 
         Gets the default value for param (where not supplied from get_commands)
-
         """
         return self._run_raw_sess_command("get_default_param", command, *args)
 
     def get_format_suggestion(self, command):
-        u"""Get format suggestion for command"""
+        """Get format suggestion for command"""
         return self._run_raw_command("get_format_suggestion", command)
 
     @property
     def motd(self):
-        u"""Get (cached) message of the day from bofh server"""
+        """Get (cached) message of the day from bofh server"""
         return getattr(self, '_motd', self.get_motd())
 
     def _init_commands(self, reset=False):
-        u"""Initialize commands.
+        """
+        Initialize commands.
 
         This calls get_commands to get the list of available commands (note
         that the server can have hidden commands). Then a set of objects are
         built, so that a command as 'user info foo' can be called as
         bofh.user.info(u'foo')
-
         """
         if reset:
             for group in self._groups:
@@ -585,9 +606,9 @@ class Bofh(object):
             self._groups[group]._add_command(cmd, key, args)
 
     def get_bofh_command_keys(self):
-        u"""Get the list of group keys"""
+        """Get the list of group keys"""
         return self._groups.keys()
 
     def get_bofh_command_value(self, key):
-        u"""Lookup group key"""
+        """Lookup group key"""
         return self._groups.get(key)

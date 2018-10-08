@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-
-# Copyright 2010 University of Oslo, Norway
+#
+# Copyright 2010-2018 University of Oslo, Norway
 #
 # This file is part of PyBofh.
 #
@@ -17,12 +17,24 @@
 # You should have received a copy of the GNU General Public License
 # along with PyBofh; if not, write to the Free Software Foundation,
 # Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+"""
+Implementation of internal pybofh commands.
 
-u"""This is the implementation of commands internal to the bofh client.
+Internal commands are commands that appear as regular commands in the
+interactive bofh client, but aren't sent (directly) to the XMLRPC server.
 
-Typically these functions would be called through 
-the eval (:meth:`bofh.parser.Command.eval`) method of the object
-returned from :func:`bofh.parser.parse`.
+Typically these functions would be called through the eval
+(:meth:`bofh.parser.Command.eval`) method of the object returned from
+:func:`bofh.parser.parse`.
+
+Implemented commands
+--------------------
+
+- commands
+- help
+- quit
+- script
+- source
 """
 
 from __future__ import with_statement
@@ -30,15 +42,17 @@ import os
 
 # Helptexts for the help() function
 _helptexts = {
-        u'help': u"help | help command | help command1 command2 -- Get help",
-        u'source': u"source [--ignore-errors] file -- Read commands from file",
-        u'script': u"script | script filename -- log to file",
-        u'quit': u"quit -- quit bofh",
-        u'commands': u"commands -- list commands"
-        }
+    u'commands': u"commands -- list commands",
+    u'help': u"help | help command | help command1 command2 -- Get help",
+    u'quit': u"quit -- quit bofh",
+    u'script': u"script | script filename -- log to file",
+    u'source': u"source [--ignore-errors] file -- Read commands from file",
+}
+
 
 def help(bofh, *args):
-    """The help command.
+    """
+    The help command.
 
     Different uses:
 
@@ -50,7 +64,8 @@ def help(bofh, *args):
     :param bofh: The bofh communicator
     :type bofh: bofh.proto.Bofh.
     :param args: command to look up.
-    :returns: The help for the args"""
+    :returns: The help for the args
+    """
     if not args:
         return bofh.help()
     if len(args) == 1:
@@ -64,7 +79,8 @@ def help(bofh, *args):
 
 
 def source(bofh, ignore_errors=False, script=None):
-    """Read lines from file, parse, and execute each line.
+    """
+    Read lines from file, parse, and execute each line.
 
     Empty lines and line starting with # is ignored.
 
@@ -104,7 +120,8 @@ def source(bofh, ignore_errors=False, script=None):
 
 
 def script(bofh, file=None):
-    """Open file, and set it as log file for reader
+    """
+    Open file, and set it as log file for reader
 
     :param bofh: The bofh communicator
     :type bofh: bofh.proto.Bofh
@@ -116,14 +133,17 @@ def script(bofh, file=None):
         return u"Copying output to %s" % file
     else:
         if readlineui.script_file:
-            ret = u"Closing current scriptfile, %s" % readlineui.script_file.name
+            ret = u"Closing current scriptfile, {file}".format(
+                file=readlineui.script_file.name)
             readlineui.script_file.close()
             readlineui.script_file = None
             return ret
         return "No scriptfile currently open"
 
+
 def quit(bofh):
-    """Quit the programme
+    """
+    Quit the programme
 
     :param bofh: The bofh communicator
     :type bofh: bofh.proto.Bofh
@@ -131,6 +151,7 @@ def quit(bofh):
     """
     import sys
     sys.exit(0)
+
 
 def commands(bofh):
     """List the commands available in bofh
@@ -149,4 +170,3 @@ def commands(bofh):
             wide = max(wide, len(fullname))
             ret.append([fullname, [grpname, cmdname] + map(unicode, cmd.args)])
     return u"\n".join(map(lambda x: "%-*s -> %s" % tuple([wide] + x), ret))
-
