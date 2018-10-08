@@ -19,6 +19,7 @@
 # along with PyBofh; if not, write to the Free Software Foundation,
 # Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 import io
+import sys
 
 import setuptools
 import setuptools.command.test
@@ -82,6 +83,12 @@ def main():
     test_requirements = list(get_requirements('requirements-test.txt'))
     install_requirements = list(get_requirements('requirements.txt'))
     version = get_version()
+
+    if {'build_sphinx', 'upload_docs'}.intersection(sys.argv):
+        # Sphinx modules:
+        setup_requirements.extend(get_requirements('docs/requirements.txt'))
+        # pofh-dependencies for generating autodoc:
+        setup_requirements.extend(get_requirements('requirements.txt'))
 
     setuptools.setup(
         name='pybofh',
