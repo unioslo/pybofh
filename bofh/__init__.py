@@ -42,11 +42,13 @@ import sys
 import os.path
 
 from . import proto
+from . import version
 
 
 __all__ = ['internal_commands', 'parser', 'proto', 'readlineui', 'version',
            'get_default_url', 'get_default_protocol', 'get_default_host',
            'get_default_port', 'get_default_cert', 'connect']
+__version__ = version.version
 
 logger = logging.getLogger(__name__)
 
