@@ -24,6 +24,7 @@ import getpass
 import logging
 from urlparse import urlparse
 
+import bofh
 import bofh.config
 import bofh.proto
 import bofh.readlineui
@@ -78,42 +79,64 @@ def setup_logging(verbosity):
 
 
 def main(inargs=None):
-    argp = argparse.ArgumentParser(description="The Cerebrum Bofh client")
-    argp.add_argument('-u', '--user',
-                      default=getpass.getuser(),
-                      metavar='UNAME',
-                      help="username")
-    argp.add_argument('--url',
-                      default=None,
-                      metavar='URL',
-                      help="URL of a bofhd server.")
-    argp.add_argument('-c', '--cert',
-                      default=None,
-                      metavar='PEM',
-                      help="CA certificate in PEM-format.")
-    argp.add_argument('--insecure',
-                      default=False,
-                      action='store_true',
-                      help="Do not perform certificate checks.")
-    argp.add_argument('--timeout',
-                      default=None,
-                      type=float,
-                      metavar='TIMEOUT',
-                      help="Set timeout for network communication.")
-    argp.add_argument('-p', '--prompt',
-                      default='',
-                      metavar='PROMPT',
-                      help="Custom prompt")
-    argp.add_argument('-v', '--verbosity',
-                      dest='verbosity',
-                      action='count',
-                      default=None,
-                      help="Enable debug logging to stderr")
-    argp.add_argument('--version',
-                      action='version',
-                      version=str(dist_info))
+    parser = argparse.ArgumentParser(
+        description="The Cerebrum Bofh client")
 
-    args = argp.parse_args(inargs)
+    parser.add_argument(
+        '--version',
+        action='version',
+        version=str(dist_info))
+
+    connect_args = parser.add_argument_group('connection settings')
+    connect_args.add_argument(
+        '--url',
+        default=bofh.get_default_url(),
+        help="connect to bofhd server at %(metavar)s"
+             " (default: %(default)s)",
+        metavar='URL',
+    )
+    connect_args.add_argument(
+        '-u', '--user',
+        default=getpass.getuser(),
+        help="authenticate as %(metavar)s (default: %(default)s)",
+        metavar='USER',
+    )
+    connect_args.add_argument(
+        '-c', '--cert',
+        default=bofh.get_default_cert(),
+        help="use ca certificates from %(metavar)s (default: %(default)s)",
+        metavar='PEM',
+    )
+    connect_args.add_argument(
+        '--insecure',
+        default=False,
+        action='store_true',
+        help="skip certificate hostname validation",
+    )
+    connect_args.add_argument(
+        '--timeout',
+        type=float,
+        default=None,
+        help="set connection timeout to %(metavar)s seconds"
+             " (default: no timeout)",
+        metavar="N",
+    )
+
+    output_args = parser.add_argument_group('output settings')
+    output_args.add_argument(
+        '-p', '--prompt',
+        default=bofh.readlineui.DEFAULT_PROMPT,
+        help="use a custom prompt (default: %(default)r)",
+        metavar='PROMPT',
+    )
+    output_args.add_argument(
+        '-v', '--verbosity',
+        dest='verbosity',
+        action='count',
+        default=None,
+        help="show debug messages on stderr")
+
+    args = parser.parse_args(inargs)
     setup_logging(args.verbosity)
     logger.debug('args: %r', args)
 
