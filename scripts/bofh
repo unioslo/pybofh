@@ -18,8 +18,9 @@
 # You should have received a copy of the GNU General Public License
 # along with PyBofh; if not, write to the Free Software Foundation,
 # Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+from __future__ import print_function, unicode_literals
+
 import getpass
-import locale
 import logging
 from urlparse import urlparse
 
@@ -28,67 +29,18 @@ import bofh.proto
 import bofh.readlineui
 import bofh.version
 
-
-logger = logging.getLogger(__name__)
-encoding = locale.getpreferredencoding()
-dist_info = bofh.version.get_distribution()
-
-
-def encode(s, e=encoding):
-    return s.encode(e)
-
-
 try:
     import argparse
 except ImportError:
     from bofh.ext import argparse
 
-argp = argparse.ArgumentParser(description=u"The Cerebrum Bofh client")
-argp.add_argument('-u', '--user',
-                  default=getpass.getuser(),
-                  metavar='UNAME',
-                  help=u"username")
-argp.add_argument('--url',
-                  default=None,
-                  metavar='URL',
-                  help=u"URL of a bofhd server.")
-argp.add_argument('-c', '--cert',
-                  default=None,
-                  metavar='PEM',
-                  help=u"CA certificate in PEM-format.")
-argp.add_argument('--insecure',
-                  default=False,
-                  action='store_true',
-                  help=u"Do not perform certificate checks.")
-argp.add_argument('--timeout',
-                  default=None,
-                  type=float,
-                  metavar='TIMEOUT',
-                  help=u"Set timeout for network communication.")
-argp.add_argument('-p', '--prompt',
-                  default='',
-                  metavar='PROMPT',
-                  help=u"Custom prompt")
-argp.add_argument('-v', '--verbosity',
-                  dest='verbosity',
-                  action='count',
-                  default=None,
-                  help=u"Enable debug logging to stderr")
-argp.add_argument('--version',
-                  action='version',
-                  version=str(dist_info))
-args = argp.parse_args()
 
-
-if args.verbosity is not None:
-    level = bofh.config.get_verbosity(args.verbosity - 1)
-    bofh.config.configure_logging(level)
-
-logger.debug('args: %r', args)
+logger = logging.getLogger(__name__)
+dist_info = bofh.version.get_distribution()
 
 
 def complete_url(url):
-    u"""Add default protocol and port number to url if these were omitted
+    """Add default protocol and port number to url if these were omitted
     when entered from the command line. This is not meant to handle all
     url-variants that users may enter, but for allowing short-hand urls
     when developing/testing, (like: cere-utv01:8962, or cerebrum-uio.uio.no)
@@ -112,25 +64,82 @@ def complete_url(url):
     return url
 
 
-print encode(u"Connecting to {}\n".format(complete_url(args.url)))
+def prompt_password(user):
+    """ password prompt for `user` """
+    return getpass.getpass('Password for {}:'.format(user))
 
-try:
-    conn = bofh.connect(url=complete_url(args.url),
-                        cert=args.cert,
-                        insecure=args.insecure,
-                        timeout=args.timeout)
-    print encode(u'{}\n'.format(conn.motd))
-    conn.login(args.user,
-               getpass.getpass(u'Password for {}:'.format(args.user)))
-except (KeyboardInterrupt, EOFError):
-    print ""
-    raise SystemExit
-except bofh.proto.BofhError, e:
-    raise SystemExit(u'{}'.format(e.args[0]))
 
-try:
-    bofh.readlineui.repl(conn, prompt=args.prompt)
-except Exception, e:
-    print encode(u'Error: {}'.format(e))
-finally:
-    conn.logout()
+def setup_logging(verbosity):
+    """ configure logging if verbosity is not None """
+    if verbosity is not None:
+        level = bofh.config.get_verbosity(int(verbosity) - 1)
+        bofh.config.configure_logging(level)
+    pass
+
+
+def main(inargs=None):
+    argp = argparse.ArgumentParser(description="The Cerebrum Bofh client")
+    argp.add_argument('-u', '--user',
+                      default=getpass.getuser(),
+                      metavar='UNAME',
+                      help="username")
+    argp.add_argument('--url',
+                      default=None,
+                      metavar='URL',
+                      help="URL of a bofhd server.")
+    argp.add_argument('-c', '--cert',
+                      default=None,
+                      metavar='PEM',
+                      help="CA certificate in PEM-format.")
+    argp.add_argument('--insecure',
+                      default=False,
+                      action='store_true',
+                      help="Do not perform certificate checks.")
+    argp.add_argument('--timeout',
+                      default=None,
+                      type=float,
+                      metavar='TIMEOUT',
+                      help="Set timeout for network communication.")
+    argp.add_argument('-p', '--prompt',
+                      default='',
+                      metavar='PROMPT',
+                      help="Custom prompt")
+    argp.add_argument('-v', '--verbosity',
+                      dest='verbosity',
+                      action='count',
+                      default=None,
+                      help="Enable debug logging to stderr")
+    argp.add_argument('--version',
+                      action='version',
+                      version=str(dist_info))
+
+    args = argp.parse_args(inargs)
+    setup_logging(args.verbosity)
+    logger.debug('args: %r', args)
+
+    print("Connecting to {}\n".format(complete_url(args.url)))
+
+    try:
+        conn = bofh.connect(url=complete_url(args.url),
+                            cert=args.cert,
+                            insecure=args.insecure,
+                            timeout=args.timeout)
+        if conn.motd:
+            print(conn.motd)
+        conn.login(args.user, prompt_password(args.user))
+    except (KeyboardInterrupt, EOFError):
+        print("")
+        raise SystemExit
+    except bofh.proto.BofhError, e:
+        raise SystemExit('{}'.format(e.args[0]))
+
+    try:
+        bofh.readlineui.repl(conn, prompt=args.prompt)
+    except Exception, e:
+        print('Error: {}'.format(e))
+    finally:
+        conn.logout()
+
+
+if __name__ == '__main__':
+    main()
