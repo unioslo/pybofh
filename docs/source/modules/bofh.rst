@@ -1,0 +1,5 @@
+bofh
+====
+
+.. automodule:: bofh
+   :members:
