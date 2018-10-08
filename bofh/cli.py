@@ -141,7 +141,6 @@ def main(inargs=None):
     logger.debug('args: %r', args)
 
     print("Connecting to {}\n".format(complete_url(args.url)))
-
     try:
         conn = bofh.connect(url=complete_url(args.url),
                             cert=args.cert,
@@ -153,12 +152,13 @@ def main(inargs=None):
     except (KeyboardInterrupt, EOFError):
         print("")
         raise SystemExit
-    except bofh.proto.BofhError, e:
+    except bofh.proto.BofhError as e:
         raise SystemExit('{}'.format(e.args[0]))
 
+    # Start the interactive REPL
     try:
         bofh.readlineui.repl(conn, prompt=args.prompt)
-    except Exception, e:
+    except Exception as e:
         print('Error: {}'.format(e))
     finally:
         conn.logout()
