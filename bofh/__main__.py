@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # Copyright 2010-2018 University of Oslo, Norway
@@ -18,13 +17,10 @@
 # You should have received a copy of the GNU General Public License
 # along with PyBofh; if not, write to the Free Software Foundation,
 # Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
-""" legacy bofh script
-
-This script is kept for legacy reasons (e.g. running pybofh without running
-setup.py install).
-"""
+""" python -m bofh """
 import bofh.cli
 
 
 if __name__ == '__main__':
+    # it really should be...
     bofh.cli.main()

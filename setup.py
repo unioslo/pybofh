@@ -90,17 +90,23 @@ def main():
         url='https://bitbucket.usit.uio.no/projects/CRB/repos/pybofh',
         author='USIT, University of Oslo',
         author_email='bnt-int@usit.uio.no',
+        license='GPLv3',
 
         use_scm_version=True,
-        packages=get_packages(),
-        scripts=['scripts/bofh', 'scripts/passwd'],
+
         setup_requires=setup_requirements,
         install_requires=install_requirements,
         tests_require=test_requirements,
-        license='GPLv3',
+
+        packages=get_packages(),
         package_data={'bofh.ext': ['LICENCE.txt', 'README.md'], },
         data_files=[('etc/pybofh', ['data/ca.pem', ]), ],
-
+        entry_points={
+            'console_scripts': [
+                'bofh = bofh.cli:main',
+                'pybofh = bofh.cli:main',
+            ],
+        },
         classifiers=[
             'Development Status :: 4 - Beta',
             'Environment :: Console',

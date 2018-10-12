@@ -34,6 +34,8 @@ from . import parser, proto
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_PROMPT = "bofh>>> "
+
 
 class BofhCompleter(object):
     """
@@ -211,7 +213,7 @@ def repl(bofh, charset=None, prompt=None):
     :raises: SystemExit
     """
     if not prompt:
-        prompt = u"bofh>>> "
+        prompt = DEFAULT_PROMPT
     else:
         prompt = prompt.decode('string_escape')
 
