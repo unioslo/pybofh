@@ -29,9 +29,8 @@ server. If you don't know what `Cerebrum`_ is, you probably don't want this.
    modules/*
 
 
-
 Indices and tables
-==================
+------------------
 
 * :ref:`genindex`
 * :ref:`modindex`
