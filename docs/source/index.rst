@@ -5,20 +5,32 @@ pybofh documentation
 server. If you don't know what `Cerebrum`_ is, you probably don't want this.
 
 .. toctree::
+   :titlesonly:
    :maxdepth: 2
 
    Introduction <intro>
-   Installing pybofh <install>
-   Using pybofh <usage>
-   Modules <modules/index>
+   install
 
-..   License <license>
-..   Authors <authors>
-..   Changelog <changes>
+
+.. toctree::
+   :caption: scripts
+   :maxdepth: 1
+   :glob:
+
+   man/*
+
+
+.. toctree::
+   :caption: modules
+   :maxdepth: 1
+   :glob:
+
+   modules/index
+   modules/*
 
 
 Indices and tables
-==================
+------------------
 
 * :ref:`genindex`
 * :ref:`modindex`

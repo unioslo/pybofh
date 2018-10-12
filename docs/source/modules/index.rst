@@ -1,20 +1,8 @@
-The bofh modules
-================
+Using the modules
+=================
 
 TODO: Some of this should be moved to the source code as module docstrings, etc.
 TODO: Some of this should be moved to the documentation of a specific module.
-
-
-Submodules
-----------
-
-.. toctree::
-   :maxdepth: 1
-
-   bofh
-   bofh.parser
-   bofh.proto
-   bofh.readlineui
 
 
 Usage
