@@ -3,8 +3,8 @@ bofh
 
 ::
 
-   usage: pybofh [-h] [--version] [--url URL] [-u USER] [-c PEM] [--insecure]
-                 [--timeout N] [-p PROMPT] [-v]
+   usage: bofh [-h] [--version] [--url URL] [-u USER] [-c PEM] [--insecure]
+               [--timeout N] [-p PROMPT] [-v]
 
 
 connection settings
