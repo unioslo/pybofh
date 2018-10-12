@@ -1,12 +1,5 @@
-Using pybofh
-============
-
-This document describes how to use pybofh from the command line. For module
-usage, see :doc:`modules/index`.
-
-
 bofh
-----
+====
 
 ::
 
@@ -15,7 +8,7 @@ bofh
 
 
 connection settings
-~~~~~~~~~~~~~~~~~~~
+-------------------
 Change what XMLRPC server to connect to, and connection settings.
 
 ``--url <url>``
@@ -45,7 +38,7 @@ Change what XMLRPC server to connect to, and connection settings.
 
 
 output settings
-~~~~~~~~~~~~~~~
+---------------
 
 ``-p <prompt>``, ``--prompt <prompt>``
    Sets the interactive prompt for entering commands.

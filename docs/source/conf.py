@@ -141,14 +141,13 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    # TODO: Make actual man pages for the `bofh` script
-    # (
-    #     master_doc,
-    #     project,
-    #     '%s Documentation' % project,
-    #     [author, ],
-    #     1,
-    # )
+    (
+        'man/bofh',
+        'bofh',
+        'The Cerebrum command line interface',
+        [author, ],
+        1,
+    ),
 ]
 
 
