@@ -1,46 +1,27 @@
 # -*- coding: utf-8 -*-
-#
-# Configuration file for the Sphinx documentation builder.
-#
-# This file does only contain a selection of the most common options. For a
-# full list see the documentation:
-# http://www.sphinx-doc.org/en/stable/config
 import datetime
 import os
 import sys
 
 _now = datetime.datetime.now()
 
-# insert pybofh into path for autodoc
-sys.path.insert(0, os.path.abspath('../../'))
-# from pybofh import __version__
-
-INITIAL_YEAR = 2018  # Initial year of *documentation*?
-PROJECT_NAME = 'pybofh'
-PROJECT_AUTHOR = 'University of Oslo'
-
 
 # -- Path setup --------------------------------------------------------------
 
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-#
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.abspath('../../'))
 
 
 # -- Project information -----------------------------------------------------
+INITIAL_YEAR = 2018  # Initial year of *documentation*?
 
-project = PROJECT_NAME
+project = 'pybofh'
+author = 'University of Oslo'
 copyright = '{when}, {who}'.format(
     when=('%d - %d' % (INITIAL_YEAR, _now.year)
           if _now.year > INITIAL_YEAR
           else str(INITIAL_YEAR)),
-    who=PROJECT_AUTHOR,
+    who=author,
 )
-author = PROJECT_AUTHOR
 
 # The short X.Y version
 version = ''
@@ -94,7 +75,19 @@ pygments_style = 'sphinx'
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+html_theme = 'sphinx_rtd_theme'
+html_theme_options = {
+    'display_version': False,
+    'prev_next_buttons_location': None,
+    'style_external_links': True,
+
+    'collapse_navigation': False,
+    'sticky_navigation': True,
+    'navigation_depth': 4,
+    'includehidden': False,
+    'titles_only': True,
+}
+
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -122,28 +115,12 @@ html_static_path = []
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = '%sdoc' % PROJECT_NAME
+htmlhelp_basename = '%s-doc' % project
 
 
 # -- Options for LaTeX output ------------------------------------------------
 
-latex_elements = {
-    # The paper size ('letterpaper' or 'a4paper').
-    #
-    # 'papersize': 'letterpaper',
-
-    # The font size ('10pt', '11pt' or '12pt').
-    #
-    # 'pointsize': '10pt',
-
-    # Additional stuff for the LaTeX preamble.
-    #
-    # 'preamble': '',
-
-    # Latex figure (float) alignment
-    #
-    # 'figure_align': 'htbp',
-}
+latex_elements = {}
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
@@ -151,9 +128,9 @@ latex_elements = {
 latex_documents = [
     (
         master_doc,
-        '%s.tex' % PROJECT_NAME,
-        '%s Documentation' % PROJECT_NAME,
-        PROJECT_AUTHOR,
+        '%s.tex' % project,
+        '%s documentation' % project,
+        author,
         'manual',
     ),
 ]
@@ -167,9 +144,9 @@ man_pages = [
     # TODO: Make actual man pages for the `bofh` script
     # (
     #     master_doc,
-    #     PROJECT_NAME,
-    #     '%s Documentation' % PROJECT_NAME,
-    #     [PROJECT_AUTHOR, ],
+    #     project,
+    #     '%s Documentation' % project,
+    #     [author, ],
     #     1,
     # )
 ]

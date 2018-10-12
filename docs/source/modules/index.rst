@@ -1,5 +1,5 @@
-The ``bofh`` module
-===================
+The bofh modules
+================
 
 TODO: Some of this should be moved to the source code as module docstrings, etc.
 TODO: Some of this should be moved to the documentation of a specific module.
@@ -9,7 +9,7 @@ Submodules
 ----------
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    bofh
    bofh.parser
