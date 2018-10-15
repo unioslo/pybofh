@@ -100,7 +100,7 @@ def main():
 
         packages=get_packages(),
         package_data={'bofh.ext': ['LICENCE.txt', 'README.md'], },
-        data_files=[('etc/pybofh', ['data/ca.pem', ]), ],
+        data_files=[('share/pybofh', ['data/cacerts.pem', ]), ],
         entry_points={
             'console_scripts': [
                 'bofh = bofh.cli:main',
