@@ -18,7 +18,6 @@ pipeline {
             steps {
                 sh '''
                 python2.7 setup.py build_sphinx
-                cd build/sphinx/html
                 tar -czv -C build/sphinx/html -f pybofh-docs.tar.gz .
                 '''
                 archiveArtifacts artifacts: 'pybofh-docs.tar.gz'
