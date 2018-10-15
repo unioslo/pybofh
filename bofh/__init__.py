@@ -38,9 +38,8 @@ Typical usage would look something like:
     ...
 """
 import logging
-import sys
-import os.path
 
+from . import config
 from . import proto
 from . import version
 
@@ -56,30 +55,12 @@ logger = logging.getLogger(__name__)
 def get_default_url():
     """Get default url for connecting to bofh"""
     # TODO: This should be configurable
-    return u'%s://%s:%s' % (get_default_protocol(),
-                            get_default_host(),
-                            get_default_port())
-
-
-def get_default_protocol():
-    """Get default protocol for connecting to bofh"""
-    return u'https'
-
-
-def get_default_host():
-    """Get default host for connecting to bofh"""
-    return u'cerebrum-uio.uio.no'
-
-
-def get_default_port():
-    """Get default port for connecting to bofh"""
-    return u'8000'
+    return config.DEFAULT_URL
 
 
 def get_default_cert():
     """Get default certificate"""
-    # TODO: Should this be configurable? It depends on setup.py
-    return os.path.join(sys.prefix, u'etc/pybofh/ca.pem')
+    return config.get_config_file('cacerts.pem')
 
 
 def connect(url=None, cert=None, insecure=False, timeout=None):
