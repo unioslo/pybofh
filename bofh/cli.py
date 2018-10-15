@@ -72,10 +72,12 @@ def prompt_password(user):
 
 def setup_logging(verbosity):
     """ configure logging if verbosity is not None """
-    if verbosity is not None:
+    if verbosity is None:
+        root = logging.getLogger()
+        root.addHandler(logging.NullHandler())
+    else:
         level = bofh.config.get_verbosity(int(verbosity) - 1)
         bofh.config.configure_logging(level)
-    pass
 
 
 def main(inargs=None):
