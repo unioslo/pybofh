@@ -10,6 +10,7 @@ server. If you don't know what `Cerebrum`_ is, you probably don't want this.
 
    Introduction <intro>
    install
+   develop
 
 
 .. toctree::
