@@ -156,7 +156,11 @@ class InternalCommand(Command):
     """A command object for an internal command."""
 
     def eval(self, *rest, **kw):
-        """Find the command in :module:`bofh.internal_commands`, and call it"""
+        """
+        Evaluate internal commands.
+
+        Finds command in :py:mod:`bofh.internal_commands`, and calls it.
+        """
         from . import internal_commands as where
         cmdname = self.args[0][2][0]
         cmdref = getattr(where, cmdname)
@@ -192,7 +196,10 @@ class HelpCommand(InternalCommand):
 
 
 class SingleCommand(InternalCommand):
-    """An internal command taking no args"""
+    """
+    An internal command taking no args
+    """
+
     def __init__(self, bofh, fullcmd, cmd, index, line):
         super(SingleCommand, self).__init__(bofh, line)
         self.command = cmd

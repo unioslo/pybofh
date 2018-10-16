@@ -386,17 +386,21 @@ class BofhError(Exception):
 
 
 class SessionExpiredError(BofhError):
-    """Session has expired.
+    """
+    Session has expired.
 
-    This should probably be handled like this:
+    Example:
+
+    ::
 
         try:
             bofh.command()
-        except SessionExpiredError, e:
-            bofh.login(username, getpass()) # log in again to get new session
+        except SessionExpiredError as e:
+            # log in again to get new session
+            bofh.login(username, getpass('Re-authenticate: '))
             if e.cont:
-                e.cont()  # call method again
-
+                # call method again
+                e.cont()
     """
     pass
 
