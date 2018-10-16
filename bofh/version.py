@@ -2,21 +2,20 @@
 #
 # Copyright 2010-2018 University of Oslo, Norway
 #
-# This file is part of PyBofh.
+# This file is part of pybofh.
 #
-# PyBofh is free software; you can redistribute it and/or modify it
+# pybofh is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# PyBofh is distributed in the hope that it will be useful, but
+# pybofh is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with PyBofh; if not, write to the Free Software Foundation,
-# Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+# along with pybofh; if not, see <https://www.gnu.org/licenses/>.
 """ bofh versioning utils """
 import os
 import pkg_resources
