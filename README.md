@@ -1,7 +1,7 @@
 # pybofh
 
 *pybofh* is an interactive XMLRPC client for a `Cerebrum.modules.bofhd`
-server. If you don't know what [Cerebrum][about_cerebrum] is, you probably don't
+server. If you don't know what [Cerebrum][crb_about] is, you probably don't
 want this.
 
 
