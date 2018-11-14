@@ -109,11 +109,11 @@ def parse_format_suggestion(bofh_response, format_sugg):
     else:
         for row in st:
             if len(row) == 3:
-                format, vars, sub_hdr = row
+                format_str, vars, sub_hdr = row
                 if u"%" in sub_hdr:
-                    format, sub_hdr = sub_hdr, None
+                    format_str, sub_hdr = sub_hdr, None
             else:
-                format, vars = row
+                format_str, vars = row
                 sub_hdr = None
             if sub_hdr:
                 lst.append(sub_hdr)
@@ -127,7 +127,11 @@ def parse_format_suggestion(bofh_response, format_sugg):
                     positions = tuple(get_formatted_field(i, j) for j in vars)
                 except KeyError:
                     continue
-                lst.append(format % positions)
+                try:
+                    lst.append(format_str % positions)
+                except TypeError:
+                    # not all arguments converted during string formatting
+                    lst.append(format_str)
     return u"\n".join(lst)
 
 
@@ -219,7 +223,7 @@ class _Command(object):
             args = rest
         try:
             ret = self._bofh.run_command(self._fullname, *args)
-        except SessionExpiredError, e:
+        except SessionExpiredError as e:
             if not e.cont:
                 raise
             pw = promptfunc(u"You need to reauthenticate\nPassword:", None,
@@ -295,7 +299,7 @@ class _Command(object):
         args = list(rest)
         try:
             result = self._bofh.call_prompt_func(self._fullname, *rest)
-        except SessionExpiredError, e:
+        except SessionExpiredError as e:
             if not e.cont:
                 raise
             pw = prompt_func(u"You need to reauthenticate\nPassword:", None,
@@ -438,9 +442,9 @@ class Bofh(object):
         # Test for valid server connection, handle thrown exceptions.
         try:
             self.get_motd()
-        except ssl.SSLError, e:
+        except ssl.SSLError as e:
             raise BofhError(e)
-        except socket.error, e:
+        except socket.error as e:
             raise BofhError(e)
 
     def _run_raw_command(self, name, *args):
@@ -451,7 +455,7 @@ class Bofh(object):
 
         try:
             return _washresponse(fn(*args))
-        except _rpc.Fault, e:
+        except _rpc.Fault as e:
             epkg = 'Cerebrum.modules.bofhd.errors.'
             if e.faultString.startswith(epkg + 'ServerRestartedError:'):
                 self._init_commands(reset=True)
@@ -476,7 +480,7 @@ class Bofh(object):
         def run_command():
             try:
                 return _washresponse(fn(self._session, *args))
-            except _rpc.Fault, e:
+            except _rpc.Fault as e:
                 epkg = 'Cerebrum.modules.bofhd.errors.'
                 if e.faultString.startswith(epkg + 'ServerRestartedError:'):
                     self._init_commands(reset=True)
