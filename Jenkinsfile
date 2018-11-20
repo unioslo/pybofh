@@ -1,8 +1,22 @@
 #!/usr/bin/env groovy
 
+def version = '0.0.0'
+def docdir = 'pybofh-docs'
+
 pipeline {
     agent { label 'python2' }
     stages {
+        stage('Gather facts') {
+            steps {
+                script {
+                    version = sh (
+                        script: 'python2.7 setup.py --version',
+                        returnStdout: true,
+                    ).trim()
+                    echo "version: ${version}"
+                }
+            }
+        }
         stage('Run unit tests') {
             steps {
                 sh 'tox'
@@ -16,11 +30,15 @@ pipeline {
         }
         stage('Build documentation') {
             steps {
-                sh '''
+                script {
+                    docdir = "pybofh-docs-${version}"
+                }
+                sh """
                 python2.7 setup.py build_sphinx
-                tar -czv -C build/sphinx/html -f pybofh-docs.tar.gz .
-                '''
-                archiveArtifacts artifacts: 'pybofh-docs.tar.gz'
+                mv build/sphinx/html "build/sphinx/${docdir}"
+                tar -czv -C build/sphinx -f "${docdir}.tar.gz" "${docdir}"
+                """
+                archiveArtifacts artifacts: "${docdir}.tar.gz"
             }
         }
     }
@@ -31,7 +49,7 @@ pipeline {
         cleanup {
             sh 'rm -vf junit*.xml'
             sh 'rm -vrf build dist'
-            sh 'rm -vf pybofh-docs.tar.gz'
+            sh 'rm -vf pybofh-docs*.tar.gz'
         }
     }
 }
