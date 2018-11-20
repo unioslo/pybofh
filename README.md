@@ -11,26 +11,33 @@ We recommend that you use [virtualenv][virtualenv] to install *pybofh*.
 
 ```bash
 python setup.py install
-bofh --help
-bofh --url https://example.org:8000
+```
+
+
+## Use
+
+```bash
+pybofh --help
+python -m bofh --help
 ```
 
 
 ## Documentation
 
-To read the *pybofh* documentation, you'll have to build it yourself.
+You'll have to build the *pybofh* documentation yourself (for now).
 
 ```bash
-python setup.py sphinx_build
+python setup.py build_sphinx
 cd build/sphinx/html
 python3 -m http.server
 ```
 Then go to <http://localhost:8000/>.
 
-For more documentation build options, see `docs/README.md` and `docs/Makefile`
+For other documentation formats, see [docs/README.md](docs/README.md) and
+[docs/Makefile](docs/Makefile).
 
 
-## Example usage
+## Module usage
 
 ```python
 import bofh
