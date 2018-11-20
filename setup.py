@@ -18,11 +18,24 @@
 # You should have received a copy of the GNU General Public License
 # along with PyBofh; if not, write to the Free Software Foundation,
 # Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+import codecs
 import io
 import sys
 
 import setuptools
 import setuptools.command.test
+
+
+def mock_mbcs_windows():
+    try:
+        codecs.lookup('mbcs')
+    except LookupError:
+        ascii_codec = codecs.lookup('ascii')
+
+        def lookup_func(name, encoding=ascii_codec):
+            return {True: encoding}.get(name == 'mbcs')
+
+        codecs.register(lookup_func)
 
 
 def get_requirements(filename):
@@ -76,10 +89,11 @@ def main():
     install_requirements = list(get_requirements('requirements.txt'))
 
     if {'build_sphinx', 'upload_docs'}.intersection(sys.argv):
-        # Sphinx modules:
         setup_requirements.extend(get_requirements('docs/requirements.txt'))
-        # pofh-dependencies for generating autodoc:
         setup_requirements.extend(get_requirements('requirements.txt'))
+
+    if {'bdist_wininst', }.intersection(sys.argv):
+        mock_mbcs_windows()
 
     setuptools.setup(
         name='pybofh',
