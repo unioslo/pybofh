@@ -229,7 +229,7 @@ class SuggestionFormatter(ResponseFormatter):
             response = [response]
 
         if self.suggestion.header:
-            lines.append(self.header)
+            lines.append(self.suggestion.header)
 
         for fmt_item in self.suggestion:
             if fmt_item.header:
