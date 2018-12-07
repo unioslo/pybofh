@@ -119,21 +119,42 @@ def get_formatted_field(data, selection):
 
 
 class FormatItem(object):
-    """ A single format suggestion item. """
+    """
+    A callable formatter for bofh response data.
 
+    The formatter consists of a format string, a tuple of names to map into
+    the format string, and an optional header.
+    """
     def __init__(self, format_str, names=None, header=None):
+        """
+        :param str format_str:
+            A format string, e.g. ``"foo: %s, bar: %s"``.
+        :param tuple names:
+            Names to insert into the format string, e.g. ``('foo', 'bar')``.
+        :param str header:
+            An optional header for the format string.
+        """
         self.format_str = format_str
-        self.names = tuple((n for n in (names or ())))
+        self.names = tuple(names or ())
         self.header = header
 
     def __call__(self, data):
+        """
+        :param dict data:
+            An item from a bofh response to format.
+        """
         values = tuple(get_formatted_field(data, n)
                        for n in self.names)
         return self.format_str % values
 
 
 class FormatSuggestion(object):
-    """ A format suggestion. """
+    """
+    Format suggestion for a bofh command.
+
+    The format suggestion is a collection of :py:class:`FormatItem` formatters
+    for items returned from the command.
+    """
 
     key_header = "hdr"
     key_string_vars = "str_vars"
@@ -162,9 +183,9 @@ class FormatSuggestion(object):
         return iter(self._get_format_strings())
 
     @classmethod
-    def from_dict(cls, response):
-        header = response.get(cls.key_header)
-        str_vars = response.get(cls.key_string_vars)
+    def from_dict(cls, suggestion_response):
+        header = suggestion_response.get(cls.key_header)
+        str_vars = suggestion_response.get(cls.key_string_vars)
         return cls(str_vars, header=header)
 
 
@@ -197,12 +218,7 @@ class StringFormatter(ResponseFormatter):
 class SuggestionFormatter(ResponseFormatter):
     """
     Response formatter for commands with a format suggestion.
-
     """
-
-    key_header = "hdr"
-    key_string_vars = "str_vars"
-
     def __init__(self, format_suggestion):
         self.suggestion = format_suggestion
 
