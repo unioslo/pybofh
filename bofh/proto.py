@@ -182,7 +182,7 @@ class _Command(object):
         if with_format:
             formatter = get_formatter(self.format_suggestion)
             if any(isinstance(i, (list, tuple)) for i in args):
-                return map(lambda x: formatter(x), ret)
+                return map(formatter, ret)
             else:
                 return formatter(ret)
 
