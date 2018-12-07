@@ -1,16 +1,28 @@
 Installing pybofh
 =================
 
-Install from `pypi`_
---------------------
+Install with pip
+----------------
+For now, a source distribution is published in the *pypi-usit-int* repo at
+repo.usit.uio.no. This distribution can be installed and upgraded with:
 
-TODO: Make and publish distribution
+::
+
+   pip install \
+      --upgrade \
+      --extra-index-url https://repo.usit.uio.no/nexus/repository/pypi-usit-int/simple \
+      pybofh
+
+This source distribution may be extended or replaced with wheels or other binary
+distributions at some point.
+
+.. TODO: Do we want to publish 
 
 
 Install from RPM
 ----------------
-
 TODO: Make and publish RPM
+.. See https://bitbucket.usit.uio.no/users/fhl/repos/python-pybofh-spec/browse
 
 
 Install from source
