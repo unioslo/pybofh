@@ -229,11 +229,11 @@ def repl(bofh, charset=None, prompt=None):
             if not line:
                 continue
         except EOFError:
-            logger.debug('got EOFError')
+            logger.debug('EOFError on raw_input()', exc_info=True)
             print("So long, and thanks for all the fish!")
             return
         except KeyboardInterrupt:
-            logger.debug('got KeyboardInterrupt')
+            logger.debug('KeyboardInterrupt on raw_input()', exc_info=True)
             print("")
             raise SystemExit()
         if script_file is not None:
@@ -253,24 +253,25 @@ def repl(bofh, charset=None, prompt=None):
                 script_file.write(u"\n".encode(charset))
         except SystemExit:
             # raised in internal_commands.quit()
-            logger.debug('got SystemExit')
+            logger.debug('SystemExit on parse/eval', exc_info=True)
             # TODO/TBD: Output some message?
             raise
-        except proto.SessionExpiredError as e:
-            logger.debug(e)
+        except proto.SessionExpiredError:
+            logger.debug('session error on parse/eval', exc_info=True)
             # Session expired, relogin.
             print("Session expired, you need to reauthenticate")
             pw = getpass.getpass()
             bofh.login(None, pw, init=False)
         except proto.BofhError as e:
-            logger.debug(e)
+            logger.debug('protocol error on parse/eval', exc_info=True)
             # Error from the bofh server
             print(e.args[0].encode(charset))
-        except EOFError:   # Sent from prompt func. Just ask for new command
-            logger.debug('EOFError')
+        except EOFError:
+            # Sent from prompt func. Just ask for new command
+            logger.debug('EOFError on parse/eval', exc_info=True)
             print()
         except parser.SynErr as e:
-            logger.error(e)
+            logger.debug('syntax error on parse/eval', exc_info=True)
             print(unicode(e).encode(charset))
         except Exception:
             logger.exception('Unhandled exception')
