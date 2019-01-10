@@ -178,9 +178,11 @@ class _Command(object):
                           'accountPassword')
             self._bofh.login(None, pw, False)
             ret = e.cont()
+        logger.debug('got response: %r', ret)
 
         if with_format:
             formatter = get_formatter(self.format_suggestion)
+            logger.debug("formatting response with %r", type(formatter))
             if any(isinstance(i, (list, tuple)) for i in args):
                 return map(formatter, ret)
             else:
