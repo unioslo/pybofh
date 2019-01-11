@@ -3,6 +3,7 @@ import datetime
 
 import pytest
 
+from bofh.formatting import FieldRef
 from bofh.formatting import FormatItem
 # from bofh.formatting import FormatSuggestion
 from bofh.formatting import StringFormatter
@@ -37,24 +38,67 @@ def test_sdf_formats(sdf, strftime):
 
 ))
 def test_get_formatted_field(select, expect):
-    assert get_formatted_field(response_data, select) == expect
+    field = FieldRef.from_str(select)
+    assert get_formatted_field(field, response_data) == expect
+
+
+def test_field_ref():
+    ref = FieldRef('foo', 'bar', 'baz')
+    assert ref.name == 'foo'
+    assert ref.type == 'bar'
+    assert ref.params == 'baz'
+
+
+def test_field_ref_defaults():
+    ref = FieldRef('foo')
+    assert ref.name == 'foo'
+    assert ref.type is None
+    assert ref.params is None
+
+
+def test_field_ref_parse_simple():
+    ref = FieldRef.from_str('foo')
+    assert ref.name == 'foo'
+    assert ref.type is None
+    assert ref.params is None
+
+
+def test_field_ref_parse_type():
+    ref = FieldRef.from_str('foo:bar:baz')
+    assert ref.name == 'foo'
+    assert ref.type == 'bar'
+    assert ref.params == 'baz'
+
+
+def test_get_field_none():
+    ref = FieldRef('foo')
+    data = {'foo': None, }
+    value = get_formatted_field(ref, data)
+    assert value == '<not set>'
+
+
+def test_get_field_simple():
+    ref = FieldRef('foo')
+    data = {'foo': 'bar', }
+    value = get_formatted_field(ref, data)
+    assert value == 'bar'
 
 
 def test_format_item_empty():
     strval = "hello world"
     item = FormatItem(strval)
-    assert item({'foo': 'asd', 'bar': 'bsd'}) == strval
+    assert item.format({'foo': 'asd', 'bar': 'bsd'}) == strval
 
 
 def test_format_item():
     fmt = "foo:%s bar=%s"
-    fields = ["foo", "bar"]
+    fields = tuple(map(FieldRef, ("foo", "bar")))
     data = {'foo': 'asd', 'bar': 'bsd'}
 
-    expect = fmt % tuple((data[k] for k in fields))
+    expect = fmt % tuple((data[k.name] for k in fields))
 
-    item = FormatItem(fmt, names=fields)
-    assert item(data) == expect
+    item = FormatItem(fmt, fields=fields)
+    assert item.format(data) == expect
 
 
 def test_get_string_formatter():

@@ -174,15 +174,11 @@ class FormatItem(object):
     def __repr__(self):
         return '<FormatItem fields=%r>' % (tuple(f.name for f in self.fields),)
 
+    def mismatches(self, data_set):
+        return tuple(f.name for f in self.fields if f.name not in data_set)
+
     def match(self, data_set):
-        missing_fields = tuple(f.name for f in self.fields
-                               if f.name not in data_set)
-        if missing_fields:
-            logger.info('fields mismatch for %r: missing %r',
-                        self, missing_fields)
-            return False
-        else:
-            return True
+        return not bool(self.mismatches(data_set))
 
     def format(self, data_set):
         values = tuple(get_formatted_field(f, data_set)
@@ -204,6 +200,9 @@ class FormatSuggestion(object):
     def __init__(self, items, header=None):
         self.items = items
         self.header = header
+
+    def __len__(self):
+        return len(self.items)
 
     def __iter__(self):
         return iter(self.items)
@@ -271,14 +270,16 @@ class SuggestionFormatter(ResponseFormatter):
     def _generate_lines(self, response):
         if self.suggestion.header:
             yield self.suggestion.header
-        for fmt_item in self.suggestion:
+        for fmt_no, fmt_item in enumerate(self.suggestion, 1):
+            logger.info('processing formatter %d/%d: %r',
+                        fmt_no, len(self.suggestion), fmt_item)
             if fmt_item.header:
                 yield fmt_item.header
             for part, data_item in enumerate(response, 1):
                 if isinstance(data_item, basestring):
                     yield data_item
                     continue
-                if not fmt_item.match(data_item):
+                if fmt_item.mismatches(data_item):
                     continue
                 try:
                     yield fmt_item.format(data_item)
