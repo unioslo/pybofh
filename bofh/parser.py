@@ -140,7 +140,8 @@ class BofhCommand(Command):
         return ret
 
     def eval(self, prompter=None, *rest, **kw):
-        """Evaluate the parsed expression.
+        """
+        Evaluate the parsed expression.
 
         :param prompter: Callable to get single input item
         """
@@ -148,6 +149,9 @@ class BofhCommand(Command):
         try:
             return self.command(prompter=prompter, *args)
         except AttributeError:
+            logger.debug("unable to run %r with %r",
+                         self.command, args, exc_info=True)
+            # TODO: This is probably the wrong exception to re-raise
             raise NoGroup(None, args)
 
 
@@ -458,6 +462,7 @@ def parse(bofh, text):
     try:
         group, idx, fltrcmds, solematch = parse_string(lex, allcmds)
     except IncompleteParse:
+        logger.debug("issue parsing %r", text, exc_info=True)
         raise NoGroup(None, allcmds)
 
     if solematch:

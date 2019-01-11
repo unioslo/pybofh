@@ -16,7 +16,9 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with pybofh; if not, see <https://www.gnu.org/licenses/>.
-"""Module to communicate with bofh server."""
+"""
+Module to communicate with a bofh server.
+"""
 
 import logging
 import socket
@@ -25,114 +27,55 @@ import xmlrpclib as _rpc
 from urlparse import urlparse
 
 from . import version
+from .formatting import get_formatter
 from .https import (BofhTransport, UnsafeBofhTransport)
+
 
 logger = logging.getLogger(__name__)
 
 
-def _sdt2strftime(format):
-    """Simple thing to convert java's simple date format to strftime"""
-    #       (subst, with),
-    reps = ((u"yyyy", u"%Y"),
-            (u"MM", u"%m"),
-            (u"dd", u"%d"),
-            (u"HH", u"%H"),
-            (u"mm", u"%M"),
-            (u"ss", u"%S"))
-    return reduce(lambda form, rep: form.replace(*rep), reps, format)
-
-
-def _washresponse(resp):
+def wash_response(bofh_response):
     """
-    Wash response
+    Wash response data.
 
     Walk down any objects in response (we can get strings, dicts and lists),
-    and make sure any strings are unicode. Also, we code None as ':None',
-    and escapes other colon at start of string with an extra colon
+    and make sure any strings are unicode.  Also, the server and client codes
+    ``None`` as ``":None"``, and escapes strings starting with ``":"`` as
+    ``"::"``.
 
-    >>> _washresponse(":None")
-    >>> _washresponse("::None")
+    >>> wash_response(":None")
+    >>> wash_response("::None")
     u':None'
-    >>> _washresponse(["None", ":None", "::None"])
+    >>> wash_response(["None", ":None", "::None"])
     [u'None', None, u':None']
     """
-    if isinstance(resp, basestring):
-        if resp and resp[0] == ':':
-            return None if resp == ':None' else resp[1:]
-        return unicode(resp, "ISO-8859-1") if isinstance(resp, str) else resp
-    elif isinstance(resp, (list, tuple)):
-        return [_washresponse(x) for x in resp]
-    elif isinstance(resp, dict):
-        for i in resp.keys():
-            resp[i] = _washresponse(resp[i])
-        return resp
-    else:
-        return resp
+    if isinstance(bofh_response, basestring):
+        if bofh_response and bofh_response[0] == ':':
+            bofh_response = (None if bofh_response == ':None'
+                             else bofh_response[1:])
+        if isinstance(bofh_response, str):
+            bofh_response = unicode(bofh_response, "ISO-8859-1")
+    elif isinstance(bofh_response, (list, tuple)):
+        bofh_response = type(bofh_response)((wash_response(x)
+                                             for x in bofh_response))
+    elif isinstance(bofh_response, dict):
+        for i in bofh_response.keys():
+            bofh_response[i] = wash_response(bofh_response[i])
+    return bofh_response
 
 
-def parse_format_suggestion(bofh_response, format_sugg):
+def format_args(args):
     """
-    Transform a response from bofh to a string after the spec of a format
-    suggestion.
+    Format special arguments.
 
-    :param bofh_response: Response from bofh, washed with _washresponse
-    :param format_sugg: Format suggestion
+    Add additional ':' if an argument is a basestring and starts with ':',
+    as this will get sliced off by xmlutils.py in backend.
     """
-    # XXX: Explain syntax of format suggestions
-    def get_formatted_field(map, field):
-        field = field.split(":", 2)
-        val = map[field[0]]
-        if len(field) == 3:
-            if field[1] == 'date':
-                format = _sdt2strftime(field[2])
-            else:
-                raise KeyError(field[1])
-            if val is not None:
-                return val.strftime(format.encode("ASCII"))
-        if val is None:
-            return u"<not set>"
-        return val
-
-    # Handle missing format_suggestion
-    if not format_sugg:
-        if isinstance(bofh_response, basestring):
-            return bofh_response
-        else:
-            return repr(bofh_response)
-
-    lst = []
-    if "hdr" in format_sugg:
-        lst.append(format_sugg["hdr"])
-    st = format_sugg['str_vars']
-    if isinstance(st, basestring):
-        lst.append(st)
-    else:
-        for row in st:
-            if len(row) == 3:
-                format_str, vars, sub_hdr = row
-                if u"%" in sub_hdr:
-                    format_str, sub_hdr = sub_hdr, None
-            else:
-                format_str, vars = row
-                sub_hdr = None
-            if sub_hdr:
-                lst.append(sub_hdr)
-            if not isinstance(bofh_response, (list, tuple)):
-                bofh_response = [bofh_response]
-            for i in bofh_response:
-                if isinstance(i, basestring):
-                    lst.append(i)
-                    continue
-                try:
-                    positions = tuple(get_formatted_field(i, j) for j in vars)
-                except KeyError:
-                    continue
-                try:
-                    lst.append(format_str % positions)
-                except TypeError:
-                    # not all arguments converted during string formatting
-                    lst.append(format_str)
-    return u"\n".join(lst)
+    argslist = list(args)
+    for pos, arg in enumerate(argslist):
+        if isinstance(arg, basestring) and arg.startswith(':'):
+            argslist[pos] = ':' + arg
+    return tuple(argslist)
 
 
 class _Argument(object):
@@ -216,30 +159,35 @@ class _Command(object):
         :param rest: Arguments to command
         :param kw: {'prompter': promt_function, 'with_format': True or False}
         """
-        promptfunc = kw.get('prompter')
-        if promptfunc:
-            args = self.prompt_missing_args(promptfunc, *rest)
+        prompter = kw.pop('prompter', None)
+        with_format = bool(kw.pop('with_format', True))
+
+        if prompter:
+            args = self.prompt_missing_args(prompter, *rest)
         else:
             args = rest
+
         try:
             ret = self._bofh.run_command(self._fullname, *args)
         except SessionExpiredError as e:
             if not e.cont:
                 raise
-            pw = promptfunc(u"You need to reauthenticate\nPassword:", None,
-                            u"Please type your password", None,
-                            'accountPassword')
+            # TODO: What if there's no prompter?
+            pw = prompter(u"You need to reauthenticate\nPassword:", None,
+                          u"Please type your password", None,
+                          'accountPassword')
             self._bofh.login(None, pw, False)
             ret = e.cont()
+        logger.debug('got response: %r', ret)
 
-        with_format = not ('with_format' in kw and not kw['with_format'])
+        if with_format:
+            formatter = get_formatter(self.format_suggestion)
+            logger.debug("formatting response with %r", type(formatter))
+            if any(isinstance(i, (list, tuple)) for i in args):
+                return map(formatter, ret)
+            else:
+                return formatter(ret)
 
-        if with_format and not isinstance(ret, basestring):
-            for i in args:
-                if isinstance(i, (list, tuple)):
-                    return map(lambda x: parse_format_suggestion(
-                            x, self.format_suggestion), ret)
-            return parse_format_suggestion(ret, self.format_suggestion)
         return ret
 
     def prompt_missing_args(self, prompt_func, *rest, **kw):
@@ -451,15 +399,15 @@ class Bofh(object):
         """Run a command on the server"""
         fn = getattr(self._connection, name)
 
-        args = self.format_args(args)
+        args = format_args(args)
 
         try:
-            return _washresponse(fn(*args))
+            return wash_response(fn(*args))
         except _rpc.Fault as e:
             epkg = 'Cerebrum.modules.bofhd.errors.'
             if e.faultString.startswith(epkg + 'ServerRestartedError:'):
                 self._init_commands(reset=True)
-                return _washresponse(fn(*args))
+                return wash_response(fn(*args))
             elif e.faultString.startswith(epkg + 'SessionExpiredError:'):
                 # Should not happen, only in _run_raw_sess_command
                 pass
@@ -475,16 +423,16 @@ class Bofh(object):
         """Run a command on the server, using the session_id."""
         fn = getattr(self._connection, name)
 
-        args = self.format_args(args)
+        args = format_args(args)
 
         def run_command():
             try:
-                return _washresponse(fn(self._session, *args))
+                return wash_response(fn(self._session, *args))
             except _rpc.Fault as e:
                 epkg = 'Cerebrum.modules.bofhd.errors.'
                 if e.faultString.startswith(epkg + 'ServerRestartedError:'):
                     self._init_commands(reset=True)
-                    return _washresponse(fn(self._session, *args))
+                    return wash_response(fn(self._session, *args))
                 elif e.faultString.startswith(epkg + 'SessionExpiredError:'):
                     raise SessionExpiredError(u"Session expired",
                                               run_command)
@@ -496,21 +444,6 @@ class Bofh(object):
                         raise BofhError(msg)
                 raise
         return run_command()
-
-    def format_args(self, args):
-        """
-        Format special arguments.
-
-        Add additional ':' if an argument is a basestring and starts with ':',
-        as this will get sliced off by xmlutils.py in backend.
-        """
-        argslist = list(args)
-        pos = 0
-        for arg in argslist:
-            if isinstance(arg, basestring) and arg.startswith(':'):
-                argslist[pos] = ':' + arg
-            pos += 1
-        return tuple(argslist)
 
     # XXX: There are only a handfull of bofhd commands:
     # motd = get_motd(client_name, version)
@@ -532,7 +465,7 @@ class Bofh(object):
 
     def get_motd(self, client=u"PyBofh", version=version.version):
         """Get (and cache) message of the day from server"""
-        self._motd = _washresponse(self._connection.get_motd(client, version))
+        self._motd = wash_response(self._connection.get_motd(client, version))
         return self._motd
 
     def login(self, user, password, init=True):
