@@ -1,2 +1,2 @@
-sphinx
+sphinx < 2  # sphinx 2 only supports py3
 sphinx-rtd-theme
