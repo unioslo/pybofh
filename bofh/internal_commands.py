@@ -93,8 +93,13 @@ def source(bofh, ignore_errors=False, script=None):
     """
     logger.debug('source(%r, ignore_errors=%r, script=%r',
                  bofh, ignore_errors, script)
-    if not script or not os.path.isfile(script):
-        return 'Source file not given or does not exist.'
+
+    if not script:
+        return 'Source file not given'
+    if script.startswith('~'):
+        script = os.path.expanduser(script)
+    if not os.path.isfile(script):
+        return 'Filename "{}" does not exist.'.format(script)
 
     ret = []
     line_no = 0
