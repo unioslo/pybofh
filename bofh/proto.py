@@ -190,7 +190,7 @@ class _Command(object):
             formatter = get_formatter(self.format_suggestion)
             logger.debug("formatting response with %r", type(formatter))
             if any(isinstance(i, (list, tuple)) for i in args):
-                return map(formatter, ret)
+                return [formatter(r) for r in ret]
             else:
                 return formatter(ret)
 

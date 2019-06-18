@@ -304,10 +304,8 @@ def repl(bofh, charset=None, prompt=None):
             result = parse.eval(prompter=prompter)
             logger.debug("Got result=%s", repr(result))
 
-            logger.debug('before join: result=%s', repr(result))
             if isinstance(result, list):
                 result = '\n\n'.join(result)
-            logger.debug('after join: result=%s', repr(result))
 
             print(result)
             if script_file is not None:
