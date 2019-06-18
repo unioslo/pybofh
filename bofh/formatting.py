@@ -64,6 +64,9 @@ from __future__ import absolute_import, unicode_literals
 import abc
 import logging
 
+import six
+from six.moves import reduce
+
 logger = logging.getLogger(__name__)
 
 
@@ -139,7 +142,7 @@ def get_formatted_field(field_ref, data_set):
     if field_ref.type is None:
         pass
     elif field_ref.type == 'date':
-        format_str = sdf2strftime(field_ref.params).encode('ascii')
+        format_str = str(sdf2strftime(field_ref.params))
         value = value.strftime(format_str) if value else value
     else:
         raise ValueError("invalid field_ref type %r" % (field_ref.type, ))
@@ -175,12 +178,40 @@ class FormatItem(object):
         return '<FormatItem fields=%r>' % (tuple(f.name for f in self.fields),)
 
     def mismatches(self, data_set):
+        """
+        Get a tuple of field references missing in a data_set
+
+        :type data_set: dict
+        :param data_set: A partial reponse (item).
+
+        :rtype: tuple
+        :returns:
+            Returns missing field names (keys) missing in the data_set.
+        """
         return tuple(f.name for f in self.fields if f.name not in data_set)
 
     def match(self, data_set):
+        """
+        Check if this FormatItem applies to a given data set.
+
+        :type data_set: dict
+        :param data_set: A partial reponse (item).
+
+        :rtype: bool
+        :returns:
+            True if the data_set contains all required field references in
+            self.field.
+        """
         return not bool(self.mismatches(data_set))
 
     def format(self, data_set):
+        """
+        Format a given data set with this FormatItem.
+
+        :type data_set: dict
+
+        :rtype: six.text_type
+        """
         values = tuple(get_formatted_field(f, data_set)
                        for f in self.fields)
         return self.format_str % values
@@ -191,7 +222,7 @@ class FormatSuggestion(object):
     Format suggestion for a bofh command.
 
     The format suggestion is a collection of :py:class:`FormatItem` formatters
-    for items returned from the command.
+    for items (usually dicts) in a bofhd server response.
     """
 
     key_header = "hdr"
@@ -209,52 +240,70 @@ class FormatSuggestion(object):
 
     @staticmethod
     def _iter_format_strings(string_vars):
-        if isinstance(string_vars, basestring):
+        """Generate FormatItems from a sequence of str_vars."""
+        if isinstance(string_vars, six.string_types):
+            # For some reason, we got a single format string rather than a
+            # sequence of (format, (vars, ...)) tuples.
             yield FormatItem(string_vars, None, None)
-        else:
-            for t in string_vars:
-                if len(t) == 3:
-                    format_str, field_refs, sub_header = t
-                    # TODO: What's the deal here?
-                    if "%" in sub_header:
-                        format_str, sub_header = sub_header, None
-                elif len(t) == 2:
-                    format_str, field_refs = t
-                    sub_header = None
-                else:
-                    raise ValueError("invalid tuple length (%d)" % (len(t), ))
-                fields = map(FieldRef.from_str, field_refs or ())
-                yield FormatItem(format_str, fields=fields, header=sub_header)
+            return
+
+        for t in string_vars:
+            if len(t) == 3:
+                format_str, field_refs, sub_header = t
+                # TODO: What's the deal here?
+                #       Looks to be a fix for an issue where a format
+                #       suggestion had swapped sub_header and format_str?!
+                if "%" in sub_header:
+                    format_str, sub_header = sub_header, None
+            elif len(t) == 2:
+                format_str, field_refs = t
+                sub_header = None
+            else:
+                raise ValueError("invalid tuple length (%d)" % (len(t), ))
+            fields = map(FieldRef.from_str, field_refs or ())
+            yield FormatItem(format_str, fields=fields, header=sub_header)
 
     @classmethod
     def from_dict(cls, suggestion_response):
+        """
+        Create a FormatSuggestion() from a bofhd format suggestion response.
+
+        :type suggestion_response: dict
+        :param suggestion_response:
+            The format suggestion given by a bofhd server.
+
+            The dict should at least contain a 'str_vars' key, and optionally a
+            'hdr' key.
+
+        :rtype: FormatSuggestion
+        """
         header = suggestion_response.get(cls.key_header)
         string_vars = suggestion_response.get(cls.key_string_vars)
         items = tuple(cls._iter_format_strings(string_vars))
         return cls(items, header=header)
 
 
+@six.add_metaclass(abc.ABCMeta)
 class ResponseFormatter(object):
     """ Abstract response formatter. """
-    __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def __call__(self, response):
         """
-        Format servert response
+        Format server response
 
         :param response:
-            A response from the server.  The response should be *washed*.
-
+            A response from the server.  The response should be *washed* before
+            given to formatters.
         """
         raise NotImplementedError()
 
 
 class StringFormatter(ResponseFormatter):
-    """ Response formatter for commands without a format suggestion. """
+    """Response formatter for commands without a format suggestion."""
 
     def __call__(self, response):
-        if isinstance(response, basestring):
+        if isinstance(response, six.string_types):
             return response
         else:
             return repr(response)
@@ -276,7 +325,7 @@ class SuggestionFormatter(ResponseFormatter):
             if fmt_item.header:
                 yield fmt_item.header
             for part, data_item in enumerate(response, 1):
-                if isinstance(data_item, basestring):
+                if isinstance(data_item, six.string_types):
                     yield data_item
                     continue
                 if fmt_item.mismatches(data_item):
