@@ -17,17 +17,19 @@
 # You should have received a copy of the GNU General Public License
 # along with pybofh; if not, see <https://www.gnu.org/licenses/>.
 """Patches for httplib to offer certificate and hostname validation."""
-# TODO: Rename file to transport.py?
+from __future__ import absolute_import, unicode_literals
 
 import logging
 import socket
-import httplib
 from warnings import warn
-from xmlrpclib import (SafeTransport, Transport)
 from sys import version_info as _py_version
 
+import six
+from six.moves import xmlrpc_client as _xmlrpc
+from six.moves import http_client as _httplib
+
+
 DEFAULT_TIMEOUT = socket.getdefaulttimeout()
-""" Default global timeout. """
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +42,7 @@ def _create_connection(address, timeout=DEFAULT_TIMEOUT,
     in PY<26.
     """
     host, port = address
-    err = socket.error(u"getaddrinfo returns an empty list")
+    err = socket.error("getaddrinfo returns an empty list")
 
     for res in socket.getaddrinfo(host, port, 0,
                                   socket.SOCK_STREAM):
@@ -54,7 +56,7 @@ def _create_connection(address, timeout=DEFAULT_TIMEOUT,
             if source_address:
                 sock.bind(source_address)
             return sock
-        except socket.error, e:
+        except socket.error as e:
             err = e
             if sock is not None:
                 sock.close()
@@ -72,9 +74,9 @@ try:
         # TODO: When going away from python 2.5, 2.6, remove support for this?
         #       Or, alternatively, use setuptools and proper requirements.
         from .ext.ssl_match_hostname import match_hostname
-        warn(ImportWarning(u'Using extlib ssl_match_hostname backport'))
+        warn(ImportWarning('Using extlib ssl_match_hostname backport'))
 
-    class ValidatedHTTPSConnection(httplib.HTTPSConnection, object):
+    class ValidatedHTTPSConnection(_httplib.HTTPSConnection, object):
 
         """ Re-implementation of HTTPSConnection.connect to support cert validation
 
@@ -124,17 +126,22 @@ try:
             if self.ca_file and self.do_match_hostname:
                 match_hostname(self.sock.getpeercert(), self.host)
 
-    class HTTPS(httplib.HTTPS, object):
-        """New-style HTTPS class"""
-        # This will give us the object.mro() type method
-        pass
+    # The HTTPS class is only needed for PY<2.7
+    if six.PY3:
+        class HTTPS(object):
+            pass
+    else:
+        class HTTPS(_httplib.HTTPS, object):
+            """New-style HTTPS class"""
+            # This will give us the object.mro() type method
+            pass
 
 except ImportError:
     # ImportWarnings are ignored by default
-    warn(ImportWarning, u"No `ssl' module, will not support https")
+    warn(ImportWarning, "No `ssl' module, will not support https")
 
 
-class BofhTransport(SafeTransport, object):
+class SafeTransport(_xmlrpc.SafeTransport, object):
     """
     A transport object that supports proper ssl.
     """
@@ -142,18 +149,18 @@ class BofhTransport(SafeTransport, object):
     def __init__(self, cert, *rest, **kw):
         self._cert = cert
         try:
-            self._validate = bool(kw.pop(u'validate_hostname'))
+            self._validate = bool(kw.pop('validate_hostname'))
         except KeyError:
             self._validate = True
         self.timeout = kw.pop('timeout', None)
-        super(BofhTransport, self).__init__(*rest, **kw)
+        super(SafeTransport, self).__init__(*rest, **kw)
 
     def make_connection(self, host):
         try:
             cls = ValidatedHTTPSConnection
         except NameError:
             raise NotImplementedError(
-                u"Your version of httplib doesn't support HTTPS")
+                "Your version of httplib doesn't support HTTPS")
 
         cls.ca_file = self._cert
         cls.do_match_hostname = self._validate
@@ -163,7 +170,7 @@ class BofhTransport(SafeTransport, object):
         if _py_version[0:2] < (2, 7):
             # Note – Starting with the release of 2.7, make_connection returns
             #        an HTTPSConnection object
-            validated_https_cls = type('ValidatedHTTPS',
+            validated_https_cls = type(str('ValidatedHTTPS'),
                                        tuple(HTTPS.mro()),
                                        dict(_connection_class=cls))
             r = validated_https_cls(chost, None, **(x509 or {}))
@@ -180,16 +187,16 @@ class BofhTransport(SafeTransport, object):
         return self._connection[1]
 
 
-class UnsafeBofhTransport(Transport, object):
+class Transport(_xmlrpc.Transport, object):
     """
     A transport object that does NOT use ssl.
     """
     def __init__(self, timeout=None, use_datetime=0):
         self.timeout = timeout
-        Transport.__init__(self, use_datetime)
+        super(Transport, self).__init__(use_datetime)
 
     def make_connection(self, host):
-        conn = Transport.make_connection(self, host)
+        conn = super(Transport, self).make_connection(host)
         if self.timeout:
             conn.timeout = self.timeout
         return conn
