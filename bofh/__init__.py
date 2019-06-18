@@ -38,7 +38,6 @@ Typical usage would look something like:
 """
 import logging
 
-from . import config
 from . import proto
 from . import version
 
@@ -51,18 +50,7 @@ __version__ = version.version
 logger = logging.getLogger(__name__)
 
 
-def get_default_url():
-    """Get default url for connecting to bofh"""
-    # TODO: This should be configurable
-    return config.DEFAULT_URL
-
-
-def get_default_cert():
-    """Get default certificate"""
-    return config.get_config_file('cacerts.pem')
-
-
-def connect(url=None, cert=None, insecure=False, timeout=None):
+def connect(url, cert=None, insecure=False, timeout=None):
     """Connect to the bofh server, log in, and return a bofh object
 
     :type url: None, str
@@ -85,6 +73,4 @@ def connect(url=None, cert=None, insecure=False, timeout=None):
     """
     logger.debug('connect(url=%r, cert=%r, insecure=%r, timeout=%r)',
                  url, cert, insecure, timeout)
-    return proto.Bofh(url or get_default_url(),
-                      cert or get_default_cert(),
-                      insecure, timeout=timeout)
+    return proto.Bofh(url=url, cert=cert, insecure=insecure, timeout=timeout)

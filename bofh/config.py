@@ -39,6 +39,21 @@ resources.  Currently, the only file loaded from these locations are the CA
 certificate bundle used by pybofh.
 
 
+Environment variables
+---------------------
+
+.. py:data:: PYBOFH_DEFAULT_URL
+
+The default url to use if no '--url' option is given on the command line.
+
+.. py:data:: PYBOFH_DEFAULT_CAFILE
+
+The default certificate to use if no --cert is given on the command line. If no
+default certificate is set using environment variable, the first available
+'cacerts.pem' file on the py:data:`DEFAULT_CONFIG_PATH` will be used by
+default.
+
+
 Logging
 -------
 This module can be used to configure basic logging to stderr, with an optional
@@ -66,10 +81,14 @@ logger = logging.getLogger(__name__)
 # TODO: Replace default location with package_data for simplicity across
 #       platforms?
 DEFAULT_CONFIG_PATH = tuple((
+    # Read from standard locations?
     os.path.expanduser('~/.config/pybofh'),
     '/etc/pybofh',
+    # python installs data/cacerts.pem to <prefix>/share/pybofh/
     os.path.join(sys.prefix, 'local', 'share', 'pybofh'),
     os.path.join(sys.prefix, 'share', 'pybofh'),
+    # At last, look in ../data/ in case we're developing
+    os.path.join(os.path.dirname(__file__), '..', 'data'),
 ))
 
 # Default XMLRPC server url
@@ -87,6 +106,18 @@ LOGGING_VERBOSITY = tuple((
     logging.INFO,
     logging.DEBUG,
 ))
+
+
+def get_default_url():
+    return (
+        os.environ.get('PYBOFH_DEFAULT_URL') or
+        DEFAULT_URL)
+
+
+def get_default_cafile():
+    return (
+        os.environ.get('PYBOFH_DEFAULT_CAFILE') or
+        get_config_file('cacerts.pem'))
 
 
 def get_verbosity(verbosity):
