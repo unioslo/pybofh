@@ -27,27 +27,44 @@ This library can be used to automate common use cases of the pybofh cli script.
 
 Typical usage would look something like:
 
-::
+.. code:: python
 
-    >>> obj = connect('user', 'pass')
-    >>> obj.motd
-    Message of the day
-    >>> obj.user.info('user')
-    Username: user
-    ...
+    import bofh
+    import getpass
+    conn = bofh.connect('http://localhost')
+    print(conn.motd)
+    conn.login(getpass.getuser(), getpass.getpass())
+    print(obj.user.info('user'))
+
 """
 import logging
+import ssl
+
+from six.moves.urllib.parse import urlparse
 
 from . import proto
 from . import version
 
 
-__all__ = ['internal_commands', 'parser', 'proto', 'readlineui', 'version',
-           'get_default_url', 'get_default_protocol', 'get_default_host',
-           'get_default_port', 'get_default_cert', 'connect']
+__all__ = ['connect']
 __version__ = version.version
 
 logger = logging.getLogger(__name__)
+
+
+def _is_https(url):
+    parts = urlparse(url)
+    return parts.scheme == 'https'
+
+
+def _get_ssl_context(cert=None, ignore_hostname=False):
+    context = ssl.create_default_context()
+    if cert:
+        context.load_verify_locations(cafile=cert)
+
+    # TODO: Replace with a set_servername_callback() that logs a warning?
+    context.check_hostname = not ignore_hostname
+    return context
 
 
 def connect(url, cert=None, insecure=False, timeout=None):
@@ -73,4 +90,7 @@ def connect(url, cert=None, insecure=False, timeout=None):
     """
     logger.debug('connect(url=%r, cert=%r, insecure=%r, timeout=%r)',
                  url, cert, insecure, timeout)
-    return proto.Bofh(url=url, cert=cert, insecure=insecure, timeout=timeout)
+    context = None
+    if (cert or insecure) and _is_https(url):
+        context = _get_ssl_context(cert=cert, ignore_hostname=insecure)
+    return proto.Bofh(url=url, context=context, timeout=timeout)

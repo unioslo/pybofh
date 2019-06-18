@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright 2014-2018 University of Oslo, Norway
+# Copyright 2014-2019 University of Oslo, Norway
 #
 # This file is part of pybofh.
 #
@@ -16,17 +16,15 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with pybofh; if not, see <https://www.gnu.org/licenses/>.
-"""Patches for httplib to offer certificate and hostname validation."""
+"""Patches for xmlrpc that adds timeout."""
 from __future__ import absolute_import, unicode_literals
+# TODO: Rename file to transport.py?
 
 import logging
 import socket
-from warnings import warn
-from sys import version_info as _py_version
 
-import six
 from six.moves import xmlrpc_client as _xmlrpc
-from six.moves import http_client as _httplib
+from six.moves.http_client import HTTPConnection, HTTPSConnection
 
 
 DEFAULT_TIMEOUT = socket.getdefaulttimeout()
@@ -34,169 +32,57 @@ DEFAULT_TIMEOUT = socket.getdefaulttimeout()
 logger = logging.getLogger(__name__)
 
 
-def _create_connection(address, timeout=DEFAULT_TIMEOUT,
-                       source_address=None):
-    """ Python 2.5 socket creation.
+class _XmlRpcTimeoutMixin(_xmlrpc.Transport, object):
 
-    This is an implementation of `socket.create_connection' from PY>=26 for use
-    in PY<26.
-    """
-    host, port = address
-    err = socket.error("getaddrinfo returns an empty list")
+    def __init__(self, *args, **kwargs):
+        self.timeout = kwargs.pop('timeout', DEFAULT_TIMEOUT)
+        super(_XmlRpcTimeoutMixin, self).__init__(*args, **kwargs)
 
-    for res in socket.getaddrinfo(host, port, 0,
-                                  socket.SOCK_STREAM):
-        family, socktype, proto, canonname, sockaddr = res
-        sock = None
-        try:
-            sock = socket.socket(family, socktype, proto)
-            sock.connect(sockaddr)
-            if timeout is not DEFAULT_TIMEOUT:
-                sock.timeout(timeout)
-            if source_address:
-                sock.bind(source_address)
-            return sock
-        except socket.error as e:
-            err = e
-            if sock is not None:
-                sock.close()
-            continue
-    raise err
-
-
-try:
-    import ssl
-
-    try:
-        # PY3 backport
-        from backports.ssl_match_hostname import match_hostname
-    except ImportError:
-        # TODO: When going away from python 2.5, 2.6, remove support for this?
-        #       Or, alternatively, use setuptools and proper requirements.
-        from .ext.ssl_match_hostname import match_hostname
-        warn(ImportWarning('Using extlib ssl_match_hostname backport'))
-
-    class ValidatedHTTPSConnection(_httplib.HTTPSConnection, object):
-
-        """ Re-implementation of HTTPSConnection.connect to support cert validation
-
-        This class re-implements the connect method of httplib.HTTPSConnection,
-        so that it can perform certificate validation, and hostname validation.
-
-        """
-
-        ca_file = None
-        """ Set ca_file to validate server certificate.
-
-        This should be a file containing all the certificates, in PEM format,
-        for all the chains-of-trust that is accepted.
-
-        """
-
-        do_match_hostname = True
-        """ Whether to match hostname when validating server certificate. """
-
-        def connect(self):
-            """ Wrap socket properly. """
-            sock = None
-            source_addr = getattr(self, 'source_address', None)
-            timeout = getattr(self, 'timeout', DEFAULT_TIMEOUT)
-
-            makesock = getattr(socket, 'create_connection', _create_connection)
-            if source_addr:
-                # TODO: socket.create_connection doesn't support source_address
-                #       in Python 2.6
-                warn(RuntimeWarning,
-                     "No support for binding a source address, will ignore")
-            sock = makesock((self.host, self.port), timeout)
-
-            if (getattr(self, '_tunnel_host', None)
-                    and hasattr(self, '_tunnel')):
-                self.sock = sock
-                self._tunnel()
-
-            # this will throw NameError if we call the function without ssl
-            # support
-            self.sock = ssl.wrap_socket(sock,
-                                        keyfile=self.key_file,
-                                        certfile=self.cert_file,
-                                        cert_reqs=ssl.CERT_REQUIRED,
-                                        ca_certs=self.ca_file)
-
-            if self.ca_file and self.do_match_hostname:
-                match_hostname(self.sock.getpeercert(), self.host)
-
-    # The HTTPS class is only needed for PY<2.7
-    if six.PY3:
-        class HTTPS(object):
-            pass
-    else:
-        class HTTPS(_httplib.HTTPS, object):
-            """New-style HTTPS class"""
-            # This will give us the object.mro() type method
-            pass
-
-except ImportError:
-    # ImportWarnings are ignored by default
-    warn(ImportWarning, "No `ssl' module, will not support https")
-
-
-class SafeTransport(_xmlrpc.SafeTransport, object):
-    """
-    A transport object that supports proper ssl.
-    """
-
-    def __init__(self, cert, *rest, **kw):
-        self._cert = cert
-        try:
-            self._validate = bool(kw.pop('validate_hostname'))
-        except KeyError:
-            self._validate = True
-        self.timeout = kw.pop('timeout', None)
-        super(SafeTransport, self).__init__(*rest, **kw)
+    def _make_connection(self, host):
+        # Create a HTTPConnection object, from Transport.make_connection
+        chost, self._extra_headers, x509 = self.get_host_info(host)
+        conn = HTTPConnection(
+            chost,
+            None,
+            timeout=self.timeout)
+        return conn
 
     def make_connection(self, host):
-        try:
-            cls = ValidatedHTTPSConnection
-        except NameError:
-            raise NotImplementedError(
-                "Your version of httplib doesn't support HTTPS")
-
-        cls.ca_file = self._cert
-        cls.do_match_hostname = self._validate
-
-        chost, extra_headers, x509 = self.get_host_info(host)
-
-        if _py_version[0:2] < (2, 7):
-            # Note – Starting with the release of 2.7, make_connection returns
-            #        an HTTPSConnection object
-            validated_https_cls = type(str('ValidatedHTTPS'),
-                                       tuple(HTTPS.mro()),
-                                       dict(_connection_class=cls))
-            r = validated_https_cls(chost, None, **(x509 or {}))
-            r.timeout = self.timeout
-            return r
-
-        # Only newer versions of xmlrpclib
+        # Re-implementation of Transport.make_connection
         if self._connection and host == self._connection[0]:
             return self._connection[1]
 
-        self._extra_headers = extra_headers
-        self._connection = host, cls(chost, None, **(x509 or {}))
-        self._connection[1].timeout = self.timeout
-        return self._connection[1]
+        conn = self._make_connection(host)
 
-
-class Transport(_xmlrpc.Transport, object):
-    """
-    A transport object that does NOT use ssl.
-    """
-    def __init__(self, timeout=None, use_datetime=0):
-        self.timeout = timeout
-        super(Transport, self).__init__(use_datetime)
-
-    def make_connection(self, host):
-        conn = super(Transport, self).make_connection(host)
-        if self.timeout:
-            conn.timeout = self.timeout
+        # store the host argument along with the connection object
+        self._connection = host, conn
         return conn
+
+
+class Transport(_XmlRpcTimeoutMixin):
+    """
+    xmlrpc.client.Transport with timeout setting
+    """
+    pass
+
+
+class SafeTransport(_XmlRpcTimeoutMixin, _xmlrpc.SafeTransport, object):
+    """
+    xmlrpc.client.SafeTransport with timeout setting
+    """
+
+    def _make_connection(self, host):
+        chost, self._extra_headers, x509 = self.get_host_info(host)
+        conn = HTTPSConnection(
+            chost,
+            None,
+            timeout=self.timeout,
+            context=self.context,
+            **(x509 or {}))
+        return conn
+
+
+__all__ = (
+    'SafeTransport',
+    'Transport',
+)
