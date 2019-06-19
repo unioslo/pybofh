@@ -4,6 +4,8 @@
 server. If you don't know what [Cerebrum][crb_about] is, you probably don't
 want this.
 
+*pybofh* should run on Python 2.7 (>= 2.7.9, >= RHEL7 2.7.5), and Python 3.6 or newer.
+
 
 ## Install
 
