@@ -26,12 +26,23 @@ python -m bofh --help
 
 You'll have to build the *pybofh* documentation yourself (for now).
 
+Documentation is built using *sphinx*, and build requirements are specified in
+the [docs/requirements.txt](docs/requirements.txt) file.
+
 ```bash
-python setup.py build_sphinx
+python2 setup.py build_sphinx -b html
 cd build/sphinx/html
 python3 -m http.server
 ```
 Then go to <http://localhost:8000/>.
+
+There is also also a troff man-page for the *bofh* script, which can be built
+with:
+
+```bash
+python2 setup.py build_sphinx -b man
+man ./build/sphinx/man/bofh.1
+```
 
 For other documentation formats, see [docs/README.md](docs/README.md) and
 [docs/Makefile](docs/Makefile).
