@@ -1,4 +1,2 @@
-argparse; python_version < '2.7'
-backports.ssl-match-hostname
 setuptools  # pkg_resources
 six

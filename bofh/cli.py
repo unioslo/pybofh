@@ -21,6 +21,7 @@ An interactive Cerebrum XMLRPC cli client.
 """
 from __future__ import print_function, unicode_literals
 
+import argparse
 import getpass
 import logging
 
@@ -31,11 +32,6 @@ import bofh.config
 import bofh.proto
 import bofh.readlineui
 import bofh.version
-
-try:
-    import argparse
-except ImportError:
-    from bofh.ext import argparse
 
 
 logger = logging.getLogger(__name__)

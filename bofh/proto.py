@@ -29,9 +29,10 @@ import six
 from six.moves import xmlrpc_client as _xmlrpc
 from six.moves.urllib.parse import urlparse
 
-from . import version
 from . import https
+from . import version
 from .formatting import get_formatter
+
 
 logger = logging.getLogger(__name__)
 
@@ -383,13 +384,13 @@ class Bofh(object):
     see `<https://www.usit.uio.no/om/tjenestegrupper/cerebrum/>`_.
     """
 
-    def __init__(self, url, cert=None, insecure=False, timeout=None):
+    def __init__(self, url, context=None, timeout=None):
         """Connect to a bofh server"""
         self._connection = None
         self._groups = dict()
-        self._connect(url, cert=cert, insecure=insecure, timeout=timeout)
+        self._connect(url, context=context, timeout=timeout)
 
-    def _connect(self, url, cert=None, insecure=False, timeout=None):
+    def _connect(self, url, context=None, timeout=None):
         """Establish a connection with the bofh server"""
         parts = urlparse(url)
         args = {
@@ -399,10 +400,8 @@ class Bofh(object):
             args['timeout'] = timeout
 
         if parts.scheme == 'https':
-            args.update({
-                'cert': cert,
-                'validate_hostname': not insecure,
-            })
+            if 'context' is not None:
+                args['context'] = context
             self._connection = _xmlrpc.ServerProxy(
                 url,
                 transport=https.SafeTransport(**args))

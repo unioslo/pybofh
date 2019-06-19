@@ -1,7 +1,7 @@
 """ common pytest fixtures """
-import pytest
-# from six.moves.urllib.parse import urlparse
+from __future__ import unicode_literals
 
+import pytest
 
 from bofh.proto import Bofh
 
@@ -19,14 +19,13 @@ class MockConnection(object):
 class MockBofh(Bofh):
     """ bofh stub """
 
-    def _connect(self, url, cert=None, insecure=False, timeout=None):
+    def _connect(self, url, context=None, timeout=None):
         u"""Establish a connection with the bofh server"""
         self._connection = MockConnection(
             url,
             transport=MockConnection(
-                cert,
+                context=context,
                 use_datetime=True,
-                validate_hostname=not insecure,
                 timeout=timeout))
 
     def _run_raw_command(self, name, *args):
@@ -41,8 +40,8 @@ class MockBofh(Bofh):
         argslist = list(args)
         return tuple(argslist)
 
-    def get_motd(self, client=u"PyBofh", version='0.0.0.'):
-        return u''
+    def get_motd(self, client="PyBofh", version='0.0.0'):
+        return ''
 
     # def login(self, user, password, init=True)
     # def logout(self)
