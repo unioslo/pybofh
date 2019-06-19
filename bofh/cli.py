@@ -23,7 +23,8 @@ from __future__ import print_function, unicode_literals
 
 import getpass
 import logging
-from urlparse import urlparse
+
+from six.moves.urllib.parse import urlparse
 
 import bofh
 import bofh.config
@@ -93,7 +94,7 @@ def main(inargs=None):
     connect_args = parser.add_argument_group('connection settings')
     connect_args.add_argument(
         '--url',
-        default=bofh.get_default_url(),
+        default=bofh.config.get_default_url(),
         help="connect to bofhd server at %(metavar)s"
              " (default: %(default)s)",
         metavar='URL',
@@ -106,7 +107,7 @@ def main(inargs=None):
     )
     connect_args.add_argument(
         '-c', '--cert',
-        default=bofh.get_default_cert(),
+        default=bofh.config.get_default_cafile(),
         help="use ca certificates from %(metavar)s (default: %(default)s)",
         metavar='PEM',
     )
@@ -154,7 +155,7 @@ def main(inargs=None):
         conn.login(args.user, prompt_password(args.user))
     except (KeyboardInterrupt, EOFError):
         print("")
-        raise SystemExit
+        raise SystemExit()
     except bofh.proto.BofhError as e:
         raise SystemExit('{}'.format(e.args[0]))
 
