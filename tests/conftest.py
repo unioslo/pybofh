@@ -1,7 +1,7 @@
 """ common pytest fixtures """
-from urlparse import urlparse
-
 import pytest
+# from six.moves.urllib.parse import urlparse
+
 
 from bofh.proto import Bofh
 
