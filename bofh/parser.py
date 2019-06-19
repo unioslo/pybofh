@@ -25,23 +25,28 @@ interactive python client.
 Parsing input commands are neccessary in order to e.g. provide command
 completion.
 """
+from __future__ import absolute_import, unicode_literals
+
 import logging
+import os
+
+import six
 
 logger = logging.getLogger(__name__)
 
 
+@six.python_2_unicode_compatible
 class SynErr(Exception):
-    """Syntax error. Base class for syntax errors"""
-
+    """Base class for all command syntax errors."""
     def __init__(self, msg, index=None):
         super(SynErr, self).__init__(msg)
         self.index = index
         self.msg = msg
 
-    def __unicode__(self):
+    def __str__(self):
         if self.index is None:
-            return u"Syntax error"
-        return u"Syntax error at col %s: %s" % (self.index, self.msg)
+            return "Syntax error"
+        return "Syntax error at col %s: %s" % (self.index, self.msg)
 
 
 class IncompleteParse(SynErr):
@@ -54,10 +59,16 @@ class IncompleteParse(SynErr):
 
 
 class NoGroup(SynErr):
-    """The group didn't match any defined command"""
+    """
+    The group didn't match any defined command
+
+    Note that this error is also raised when an incomplete command with
+    multiple matches are given.
+    """
+    # TODO: This should be renamed, e.g. to NoCommand()
 
     def __init__(self, parse, completions):
-        super(NoGroup, self).__init__(u"No matching command", 0)
+        super(NoGroup, self).__init__("No matching command", 0)
         self.parse = parse
         self.completions = completions
 
@@ -71,17 +82,21 @@ class Command(object):
         self.line = line
 
     def append(self, arg, index, complete):
-        """Append a parsed argument.
+        """
+        Append a parsed argument.
 
-        :param arg: The found argument.
-        :param index: The starting point where arg was found, or -1 for missing
-        :param complete: an object to use by the completer"""
+        :param arg: argument value to add
+        :param index: starting point where arg was found, or -1 for missing
+        :param complete: an object to use by the completer
+        """
         self.args.append((arg, index, complete))
 
     def complete(self, start, end):
         """Get completions for argument"""
         arg = self.findarg(start, end)
-        if isinstance(arg[2], list):
+        logger.debug('%s.complete(%s, %s) -> arg=%s',
+                     type(self).__name__, repr(start), repr(end), repr(arg))
+        if isinstance(arg[2], (list, tuple, set)):
             return arg[2]
         else:
             return arg[2](start, end, *arg)
@@ -91,7 +106,7 @@ class Command(object):
         for i in self.args:
             if i[1] == start:
                 return i
-            if isinstance(i[0], (list, tuple)):
+            if isinstance(i[0], (list, tuple, set)):
                 for j in i[0]:
                     if j[0] == start:
                         return j
@@ -100,44 +115,48 @@ class Command(object):
         return None, -1, []
 
     def eval(self, prompter=None):
-        """Evaluate the parsed expression.
+        """
+        Evaluate the parsed expression.
 
         :param prompter: Callable to get single input item
         """
-        return (u"Command: «%s» not implemented" %
-                u" ".join(map(lambda x: x[0], self.args)))
+        return "Command: '{}' not implemented".format(
+            " ".join(x[0] for x in self.args))
 
     def call(self):
         return self.eval()
 
 
+def _prepare_args(args):
+    """
+    Iterate over arguments.
+
+    :param args:
+        A sequence of parsed argument tuples.
+        Each tuple should contain (arg, index, completer).
+    """
+    for arg, pos, _ in args:
+        if pos == -1:
+            continue
+        elif isinstance(arg, (list, tuple, set)):
+            inner = []
+            for j, _ in arg:
+                inner.append(j)
+            yield inner
+        else:
+            yield arg
+
+
 class BofhCommand(Command):
-    """
-    Representation of a bofh command
-    """
+    """Parser representation of a bofh command."""
 
     def set_command(self, command):
-        """Set the actual command
+        """
+        Set command implementation
 
         :type command: bofh.proto._Command
-        :param command: The command to set (returned from bofh object)
         """
         self.command = command
-
-    def get_args(self):
-        """Retrieve the parsed arguments as a list"""
-        ret = []
-        for arg, pos, _ in self.args[2:]:
-            if pos == -1:
-                pass
-            elif isinstance(arg, (list, tuple)):
-                inner = []
-                for j, _ in arg:
-                    inner.append(j)
-                ret.append(inner)
-            else:
-                ret.append(arg)
-        return ret
 
     def eval(self, prompter=None, *rest, **kw):
         """
@@ -145,7 +164,9 @@ class BofhCommand(Command):
 
         :param prompter: Callable to get single input item
         """
-        args = self.get_args()
+        # Prepare arguments -- the first two elements in self.args is the
+        # command group and the command name
+        args = tuple(_prepare_args(self.args[2:]))
         try:
             return self.command(prompter=prompter, *args)
         except AttributeError:
@@ -165,43 +186,19 @@ class InternalCommand(Command):
         Finds command in :py:mod:`bofh.internal_commands`, and calls it.
         """
         from . import internal_commands as where
-        cmdname = self.args[0][2][0]
+        args = list(_prepare_args(self.args))
+        cmdname = args.pop(0)
         cmdref = getattr(where, cmdname)
-        args = [x[0] for x in self.args[1:] if x[1] != -1]
         return cmdref(self.bofh, *args)
 
 
 class HelpCommand(InternalCommand):
     """Help command"""
-
-    def get_args(self):
-        """Get the args as a list of strings"""
-        ret = []
-        for arg, pos, _ in self.args[1:]:
-            if pos == -1:
-                pass
-            elif isinstance(arg, (list, tuple)):
-                inner = []
-                for j, _, _ in arg:
-                    inner.append(j)
-                ret.append(inner)
-            else:
-                ret.append(arg)
-        return ret
-
-    def eval(self, *rest, **kw):
-        """Call help in internal_commands"""
-        from . import internal_commands as where
-        cmdname = self.args[0][2][0]
-        cmdref = getattr(where, cmdname)
-        args = self.get_args()
-        return cmdref(self.bofh, *args)
+    pass
 
 
 class SingleCommand(InternalCommand):
-    """
-    An internal command taking no args
-    """
+    """An internal command taking no args"""
 
     def __init__(self, bofh, fullcmd, cmd, index, line):
         super(SingleCommand, self).__init__(bofh, line)
@@ -231,28 +228,39 @@ class ArgCompleter(object):
         return []  # perhaps do something here based on arg type
 
 
-def _r(fname):
+def _is_file(fname):
     """Quick check if fname is the name of a readable file"""
-    import os.path
     fname = os.path.realpath(fname)
     return os.path.exists(fname) and os.path.isfile(fname)
 
 
 def _parse_bofh_command(bofh, fullgrp, group, start, lex, line):
-    """Parse the rest of a bofh command.
+    """
+    Parse the rest of a bofh command.
 
-    :param bofh: The bofh object
-    :param fullgrp: The first part of the command
-    :type fullgrp: unicode
-    :param group: The part of fullgrp that is actually read
-    :type group: unicode
-    :param start: Index of the first char on the line
+    When we've identified the first argument to be a command group, this parse
+    function helps parsing the command name within that group.
+
+    :type bofh: bofh.proto.Bofh
+
+    :type fullgrp: six.text_type
+    :param fullgrp: The command group name
+
+    :type group: six.text_type
+    :param group: Partial or full name of a command within the command group
+
     :type start: int
-    :param lex: Lexer from :func:`lexer`
-    :type lex: Generator
+    :param start: Index of the first char on the line
+
+    :type lex: generator
+    :param lex: A :func:`lexer` generator
+
+    :type line: six.text_type
     :param line: The line to parse
-    :type line: unicode
-    :returns: A new :class:`BofhCommand` object
+
+    :rtype: BofhCommand
+    :returns: An XMLRPC command with arguments.
+
     :raises: SynErr
     """
     logger.debug('_parse_bofh_command(%r, %r, %r, %r, %r, %r)',
@@ -263,11 +271,11 @@ def _parse_bofh_command(bofh, fullgrp, group, start, lex, line):
     ret.append(group, start, [fullgrp])
 
     # Find second half of the command
-    allcmds = grp.get_bofh_command_keys()
+    group_cmds = get_bofh_commands(bofh, fullgrp)
     try:
-        cmd, idx, fltrcmds, solematch = parse_string(lex, allcmds)
-    except IncompleteParse, e:
-        ret.append(u"", -1, allcmds)
+        cmd, idx, fltrcmds, solematch = parse_string(lex, group_cmds)
+    except IncompleteParse as e:
+        ret.append("", -1, group_cmds)
         raise IncompleteParse(e.args[0], ret, e.completions)
 
     ret.append(cmd, idx, fltrcmds)
@@ -280,17 +288,17 @@ def _parse_bofh_command(bofh, fullgrp, group, start, lex, line):
             try:
                 arg, idx = parse_string_or_list(lex)
                 ret.append(arg, idx, ArgCompleter(expected))
-            except IncompleteParse, e:  # arg, idx = e.parse
+            except IncompleteParse as e:  # arg, idx = e.parse
                 if e.parse:
                     arg, idx = e.parse
                     ret.append(arg, idx, ArgCompleter(expected))
                 # TODO/TBD: use e.completions?
-                ret.append(u"", -1, ArgCompleter(expected))
+                ret.append("", -1, ArgCompleter(expected))
         try:
             while True:
                 arg, idx = parse_string_or_list(lex)
                 ret.append(arg, idx, [])
-        except IncompleteParse, e:
+        except IncompleteParse as e:
             if e.parse:
                 arg, idx = parse_string_or_list(lex)
                 ret.append(arg, idx, ArgCompleter(expected))
@@ -299,7 +307,16 @@ def _parse_bofh_command(bofh, fullgrp, group, start, lex, line):
 
 
 def _parse_help(bofh, fullgrp, group, start, lex, line):
-    """Parse the help command"""
+    """
+    Parse the help command.
+
+    When we've identified the first argument to be the 'help' command, this
+    parse function helps parsing the command or command group to get help for.
+
+    See :func:`_parse_bofh_command` for an explanation of the arguments.
+
+    :rtype: HelpCommand
+    """
     logger.debug('_parse_help(%r, %r, %r, %r, %r, %r)',
                  bofh, fullgrp, group, start, lex, line)
     ret = HelpCommand(bofh, line)
@@ -309,33 +326,36 @@ def _parse_help(bofh, fullgrp, group, start, lex, line):
         try:
             arg, idx = parse_string_or_list(lex)
             args.append((arg, idx))
-        except IncompleteParse, e:
+        except IncompleteParse as e:
             # XXX: handle better
             if e.parse:
                 args.append(e.parse)
             break
 
-    localcmds = _internal_cmds.keys()
+    localcmds = get_internal_commands()
     if len(args) > 2:
-        raise SynErr(u"Too many arguments for help", args[2][1])
-    elif len(args) == 0:
-        ret.append(u'', -1, localcmds + bofh.get_bofh_command_keys())
-        return ret
-    elif len(args) <= 2:
-        bofhcmds = bofh.get_bofh_command_keys()
-        allcmds = bofhcmds + localcmds
+        raise SynErr("Too many arguments for help", args[2][1])
 
+    bofhcmds = get_bofh_commands(bofh)
+    allcmds = localcmds + bofhcmds
+
+    if len(args) == 0:
+        # No arguments - all commands/groups are valid completions
+        ret.append('', -1, allcmds)
+        return ret
+
+    if len(args) <= 2:
         def match_item(cmd, expected):
-            if isinstance(cmd[0], (list, tuple)):
+            if isinstance(cmd[0], (list, tuple, set)):
                 return (
-                    map(lambda x: match_item(x, expected), cmd[0]),
+                    tuple(map(lambda x: match_item(x, expected), cmd[0])),
                     cmd[1],
                     [],
                 )
             return (
                 cmd[0],
                 cmd[1],
-                filter(lambda x: x.startswith(cmd[0]), expected),
+                list(filter(lambda x: x.startswith(cmd[0]), expected)),
             )
 
         cmd, idx, completes = match_item(args[0], allcmds)
@@ -347,28 +367,34 @@ def _parse_help(bofh, fullgrp, group, start, lex, line):
         else:
             grp = bofh.get_bofh_command_value(*completes)
             if grp:
+                grpcmds = tuple(sorted(grp.get_bofh_command_keys()))
                 if len(args) == 2:
-                    bofhcmds = grp.get_bofh_command_keys()
-                    cmd, idx, completes = match_item(args[1], bofhcmds)
+                    cmd, idx, completes = match_item(args[1], grpcmds)
                     ret.append(cmd, idx, completes)
-                    # if len(completes) == 1:
-                    #     ret.set_help_for(grp.get_bofh_command_value(*completes))
                 else:
-                    ret.append(None, -1, grp.get_bofh_command_keys())
-                    # ret.set_help_for(grp)
+                    ret.append(None, -1, grpcmds)
             elif completes[0] in _internal_cmds:
                 if len(args) == 1:
                     pass
-                    # ret.set_help_str(_internal_help(*completes[0]))
                 else:
-                    raise SynErr(u"Too many arguments for help", args[1][1])
+                    raise SynErr("Too many arguments for help", args[1][1])
             else:
-                pass  # incomplete, find group/internal command
+                # incomplete, find group/internal command
+                pass
     return ret
 
 
 def _parse_script(bofh, fullgrp, group, start, lex, line):
-    """Parse script internal command"""
+    """
+    Parse the 'script' internal command
+
+    When we've identified the first argument to be the 'script' command, this
+    parse function helps parsing the remaining arguments for that command.
+
+    See :func:`_parse_bofh_command` for an explanation of the arguments.
+
+    :rtype: InternalCommand
+    """
     logger.debug('_parse_script(%r, %r, %r, %r, %r, %r)',
                  bofh, fullgrp, group, start, lex, line)
     ret = InternalCommand(bofh, line)
@@ -382,9 +408,9 @@ def _parse_script(bofh, fullgrp, group, start, lex, line):
             # XXX: handle better
             break
     if len(args) > 1:
-        raise SynErr(u"Too many arguments for script", args[1][1])
+        raise SynErr("Too many arguments for script", args[1][1])
     elif len(args) == 1:
-        if _r(arg):
+        if _is_file(arg):
             ret.append(arg, idx, [arg])
         else:
             ret.append(arg, idx, FileCompleter())
@@ -394,7 +420,16 @@ def _parse_script(bofh, fullgrp, group, start, lex, line):
 
 
 def _parse_source(bofh, fullgrp, group, start, lex, line):
-    """Parse source internal command"""
+    """
+    Parse the 'source' internal command.
+
+    When we've identified the first argument to be the 'source' command, this
+    parse function helps parsing the remaining arguments for that command.
+
+    See :func:`_parse_bofh_command` for an explanation of the arguments.
+
+    :rtype: InternalCommand
+    """
     logger.debug('_parse_source(%r, %r, %r, %r, %r, %r)',
                  bofh, fullgrp, group, start, lex, line)
     ret = InternalCommand(bofh, line)
@@ -411,28 +446,38 @@ def _parse_source(bofh, fullgrp, group, start, lex, line):
         ret.append(None, -1, FileCompleter())
     elif len(args) == 1:
         # XXX: Have a filecompleter that also expands --ignore-errors?
-        if u'--ignore-errors'.startswith(args[0][0]):
-            ret.append(args[0][0], args[0][1], [u'--ignore-errors'])
-        elif _r(args[0][0]):
+        if '--ignore-errors'.startswith(args[0][0]):
+            ret.append(args[0][0], args[0][1], ['--ignore-errors'])
+        elif _is_file(args[0][0]):
             ret.append(None, None, [])
             ret.append(args[0][0], args[0][1], [args[0][0]])
         else:
             ret.append(None, None, [])
             ret.append(arg, idx, FileCompleter())
     elif len(args) == 2:
-        if u'--ignore-errors'.startswith(args[0][0]):
-            ret.append(args[0][0], idx, [u'--ignore-errors'])
+        if '--ignore-errors'.startswith(args[0][0]):
+            ret.append(args[0][0], idx, ['--ignore-errors'])
         else:
-            raise SynErr(u"Expected --ignore-errors, found %s" %
+            raise SynErr("Expected --ignore-errors, found %s" %
                          args[0][0], args[0][1])
         ret.append(arg, idx, FileCompleter())
     else:
-        raise SynErr(u"Too many arguments for source", args[2][1])
+        raise SynErr("Too many arguments for source", args[2][1])
     return ret
 
 
 def _parse_single(bofh, fullgrp, group, start, lex, line):
-    """Parse an internal command taking no args"""
+    """
+    Parse (internal) commands without arguments.
+
+    When we've identified the first argument to be an internal command that
+    does not take any arguments, this function immediately returns a
+    SingleCommand() reperesentation of that command.
+
+    See :func:`_parse_bofh_command` for an explanation of the arguments.
+
+    :rtype: SingleCommand
+    """
     logger.debug('_parse_single(%r, %r, %r, %r, %r, %r)',
                  bofh, fullgrp, group, start, lex, line)
     return SingleCommand(bofh, fullgrp, group, start, line)
@@ -442,23 +487,35 @@ def _parse_single(bofh, fullgrp, group, start, lex, line):
 # TODO: This should probably be linked with internal_commands in some other
 #       way?
 _internal_cmds = {
-    u'commands': _parse_single,
-    u'help': _parse_help,
-    u'quit': _parse_single,
-    u'script': _parse_script,
-    u'source': _parse_source,
+    'commands': _parse_single,
+    'help': _parse_help,
+    'quit': _parse_single,
+    'script': _parse_script,
+    'source': _parse_source,
 }
+
+
+def get_bofh_commands(bofh, groupname=None):
+    if groupname is not None:
+        bofh = getattr(bofh, groupname)
+    return tuple(sorted(bofh.get_bofh_command_keys()))
+
+
+def get_internal_commands():
+    return tuple(sorted(_internal_cmds.keys()))
 
 
 def parse(bofh, text):
     """
     Parses a command
 
-    :text: A (unicode) object to parse
+    :type text: six.text_type
+    :param text: A text string to parse.
     """
     lex = lexer(text)
-    initial = bofh.get_bofh_command_keys()
-    allcmds = initial + _internal_cmds.keys()
+    localcmds = get_internal_commands()
+    bofhcmds = get_bofh_commands(bofh)
+    allcmds = localcmds + bofhcmds
     try:
         group, idx, fltrcmds, solematch = parse_string(lex, allcmds)
     except IncompleteParse:
@@ -470,7 +527,7 @@ def parse(bofh, text):
     else:
         fullgrp = group
 
-    if solematch and fullgrp in initial:
+    if solematch and fullgrp in bofhcmds:
         return _parse_bofh_command(bofh, fullgrp, group, idx, lex, text)
 
     if solematch:
@@ -482,28 +539,37 @@ def parse(bofh, text):
     raise NoGroup(rest, fltrcmds)
 
 
-def parse_string(lex, expected=[]):
-    """Get a string from lex, fail on list, and return possible matches
-    Params:
-    lex: lexer from lex, will pop one item from it.
-    expected: list of possible parses
-    Return values:
-    0: Parsed string
-    1: Index of parsed string
-    2: list of matches
-    3: A match for parsed string in expected
-    Raises SynErr if read item is a paren"""
+def parse_string(lex, expected=None):
+    """
+    Get a string from lex, fail on list, and return possible matches
+
+    :param lex: A :func:`lexer` generator
+    :param expected: A sequence of valid values
+
+    :rtype: tuple
+    :returns:
+        Returns a tuple with:
+
+        0. Parsed string
+        1. Index of parsed string
+        2. list of matches
+        3. A match for parsed string in expected
+
+    :raises SynErr: If read item is a paren
+    """
+    expected = expected or tuple()
     try:
-        val, idx = lex.next()
+        val, idx = next(lex)
     except StopIteration:
-        raise IncompleteParse(u"Expected string, got nothing", u"", expected)
+        raise IncompleteParse("Expected string, got nothing", "",
+                              expected)
     if idx == -1:
         # XXX: Do sane stuff here
-
-        raise IncompleteParse(u"Expected %s, got nothing" % val, u"", expected)
-    if val in (u'(', u')'):
-        raise SynErr("Expected string, got %s" % val, idx)
-    expected = filter(lambda x: x.startswith(val), expected)
+        raise IncompleteParse("Expected %r, got nothing" % (val,), "",
+                              expected)
+    if val in ('(', ')'):
+        raise SynErr("Expected string, got %r" % (val,), idx)
+    expected = tuple(value for value in expected if value.startswith(val))
     if len(expected) == 1:
         solematch = expected[0]
     elif val in expected:
@@ -523,68 +589,71 @@ def parse_string_or_list(lex):
                 # signals missing char after \ or missing matching ".
                 try:
                     # gets either ", -1 or some last token
-                    val1, idx1 = lex.next()
+                    val1, idx1 = next(lex)
                 except StopIteration:  # no last token
-                    raise IncompleteParse(u"Expected %s, got nothing" % (
-                        u"something" if val == u'\\' else u')'), ret, [])
+                    raise IncompleteParse(
+                        "Expected %s, got nothing" %
+                        ("something" if val == '\\' else ')'),
+                        ret, [])
                 if idx1 == -1:  # signal we want both a \ ending and a "
                     try:  # check if the last token waits.
-                        val1, idx1 = lex.next()
+                        val1, idx1 = next(lex)
                         ret.append((val1, idx1))
                         raise IncompleteParse(
-                            u"Expected something and \", got nothing",
-                            ret, [u' ")'])
+                            "Expected something and \", got nothing",
+                            ret, [' ")'])
                     except StopIteration:
                         raise IncompleteParse(
-                            u"Expected something and \", got nothing",
-                            ret, [u' ")'])
+                            "Expected something and \", got nothing",
+                            ret, [' ")'])
                 else:
                     # val1, idx1 holds the last token
                     ret.append((val1, idx1))
                     raise IncompleteParse(
-                        u"Expected %s, got nothing" %
-                        (u"something" if val == u"\\" else u')'),
-                        ret, [u' )' if val == u"\\" else u'")'])
-            elif val == u'(':
+                        "Expected %s, got nothing" %
+                        ("something" if val == "\\" else ')'),
+                        ret, [' )' if val == "\\" else '")'])
+            elif val == '(':
                 # we don't know what to do
                 # XXX: should we continue parsing?
                 raise SynErr("Nested list expression", idx)
-            elif val == u')':
+            elif val == ')':
                 return ret
             ret.append((val, idx))
-        raise IncompleteParse(u"Expected ), got nothing", ret, [])
+        raise IncompleteParse("Expected ), got nothing", ret, [])
+
     try:
-        val, idx = lex.next()
+        val, idx = next(lex)
     except StopIteration:
         raise IncompleteParse(
-            u"Expected string or list, got nothing", None, [])
+            "Expected string or list, got nothing", None, [])
     if idx == -1:
         try:
-            val1, idx1 = lex.next()
+            val1, idx1 = next(lex)
         except StopIteration:  # no last token
             raise IncompleteParse(
-                u"Expected %s, got nothing" %
-                (u"something" if val == u'\\' else u'"'),
-                None, [u' ' if val == u'\\' else u'"'])
+                "Expected %s, got nothing" %
+                ("something" if val == '\\' else '"'),
+                None, [' ' if val == '\\' else '"'])
         if idx1 == -1:  # signal we want both a \ ending and a "
             try:  # check if the last token waits.
-                val1, idx1 = lex.next()
+                val1, idx1 = next(lex)
                 raise IncompleteParse(
-                    u"Expected something and \", got nothing",
-                    (val1, idx1), [u' "'])
+                    "Expected something and \", got nothing",
+                    (val1, idx1), [' "'])
             except StopIteration:
                 raise IncompleteParse(
-                    u"Expected something and \", got nothing",
-                    None, [u' "'])
+                    "Expected something and \", got nothing",
+                    None, [' "'])
         else:  # val1, idx1 holds the last token
             raise IncompleteParse(
-                u"Expected %s, got nothing" %
-                (u"something" if val == u"\\" else u')'),
-                (val1, idx1), [u' ' if val == u'\\' else u'"'])
-    elif val == u'(':
+                "Expected %s, got nothing" %
+                ("something" if val == "\\" else ')'),
+                (val1, idx1), [' ' if val == '\\' else '"'])
+    elif val == '(':
         try:
             return parse_list(), idx
-        except IncompleteParse, e:
+        except IncompleteParse as e:
             e.parse = (e.parse, idx)
             raise
     else:
@@ -592,52 +661,66 @@ def parse_string_or_list(lex):
 
 
 def lexer(text):
-    """Generates tokens from the text"""
+    """
+    Generates tokens from the text
+
+    :type text: six.text_type
+    :param text: The text to tokenize.
+
+    :rtype: generator
+    :returns:
+        A generator that yields (token, offset) pairs.
+
+    >>> list(lexer(u'group info foo'))
+    [(u'group', 0), (u'info', 6), (u'foo', 11)]
+    """
+    if not isinstance(text, six.text_type):
+        raise TypeError("invalid type %s, expected %s" %
+                        (type(text).__name__, six.text_type.__name__))
     ret = []
     start = 0
     inquotes = False
     internalquotes = False
     backslash = False
-    for i in range(len(text)):
-        cur = text[i]
+    for i, cur in enumerate(text):
         if backslash:
             if not ret:
-                start = i-1
+                start = i - 1
             ret.append(cur)
             backslash = False
         elif inquotes:
-            if cur == u'"':
+            if cur == '"':
                 inquotes = False
                 if not internalquotes:
                     internalquotes = False
-                    yield u''.join(ret), start
+                    yield ''.join(ret), start
                     ret = []
             else:
                 ret.append(cur)
-        elif cur == u'(' or cur == u')':
+        elif cur == '(' or cur == ')':
             if ret:
-                yield u''.join(ret), start
+                yield ''.join(ret), start
                 ret = []
             yield cur, i
-        elif cur == u'"':
+        elif cur == '"':
             inquotes = True
             internalquotes = bool(ret)
             if not internalquotes:
                 start = i
         elif cur.isspace():
             if ret:
-                yield u''.join(ret), start
+                yield ''.join(ret), start
                 ret = []
-                # yield u' ', i
-        elif cur == u'\\':
+                # yield ' ', i
+        elif cur == '\\':
             backslash = True
         else:
             if not ret:
                 start = i
             ret.append(cur)
     if backslash:
-        yield u'\\', -1
+        yield '\\', -1
     if inquotes:
-        yield u'"', -1
+        yield '"', -1
     if ret:
-        yield u''.join(ret), start
+        yield ''.join(ret), start

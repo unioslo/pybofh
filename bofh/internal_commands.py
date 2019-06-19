@@ -35,18 +35,19 @@ Implemented commands
 - script
 - source
 """
-from __future__ import with_statement
+from __future__ import absolute_import, unicode_literals, with_statement
 
+import io
 import logging
 import os
 
 # Helptexts for the help() function
 _helptexts = {
-    u'commands': u"commands -- list commands",
-    u'help': u"help | help command | help command1 command2 -- Get help",
-    u'quit': u"quit -- quit bofh",
-    u'script': u"script | script filename -- log to file",
-    u'source': u"source [--ignore-errors] file -- Read commands from file",
+    'commands': "commands -- list commands",
+    'help': "help | help command | help command1 command2 -- Get help",
+    'quit': "quit -- quit bofh",
+    'script': "script | script filename -- log to file",
+    'source': "source [--ignore-errors] file -- Read commands from file",
 }
 logger = logging.getLogger(__name__)
 
@@ -62,9 +63,9 @@ def help(bofh, *args):
     * ``help group``: Returns bofh.help('group')
     * ``help group cmd``: Returns bofh.help('group', 'cmd')
 
-    :param bofh: The bofh communicator
     :type bofh: bofh.proto.Bofh.
     :param args: command to look up.
+
     :returns: The help for the args
     """
     logger.debug('help(%r, *%r)', bofh, args)
@@ -72,28 +73,29 @@ def help(bofh, *args):
         return bofh.help()
     if len(args) == 1:
         arg = args[0]
-        if isinstance(arg, list):
-            return u"\n".join(map(lambda x: help(bofh, x), arg))
+        if isinstance(arg, (list, tuple, set)):
+            return "\n".join(map(lambda x: help(bofh, x), arg))
         if arg in _helptexts:
             return _helptexts[arg]
         return bofh.help(arg)
     return bofh.help(*args)
 
 
-def source(bofh, ignore_errors=False, script=None):
+def source(bofh, ignore_errors=False, script=None, encoding='utf-8'):
     """
     Read lines from file, parse, and execute each line.
 
     Empty lines and line starting with # is ignored.
 
-    :param bofh: The bofh communicator
     :type bofh: bofh.proto.Bofh
     :param ignore_errors: Do not propagate an exception, but continue.
     :param script: The script fie to execute.
     """
-    logger.debug('source(%r, ignore_errors=%r, script=%r',
-                 bofh, ignore_errors, script)
+    logger.debug('source(%s, ignore_errors=%r, script=%r, encoding=%r)',
+                 repr(bofh), ignore_errors, script, encoding)
 
+    # TODO: Should probably raise some exception here to indicate an error,
+    # rather than returning an error string...
     if not script:
         return 'Source file not given'
     if script.startswith('~'):
@@ -102,19 +104,29 @@ def source(bofh, ignore_errors=False, script=None):
         return 'Filename "{}" does not exist.'.format(script)
 
     ret = []
-    line_no = 0
 
     from .parser import parse
-    with open(script) as src:
-        for line in src:
-            line_no += 1
+    with io.open(script, mode='r', encoding=encoding) as src:
+        for line_no, line in enumerate(src, 1):
             stripped = line.strip()
             if not stripped or stripped.startswith('#'):
                 continue
             try:
-                parsed = parse(bofh, line)
-                ret.append(parsed.eval())
-            except BaseException, e:
+                parsed = parse(bofh, stripped)
+                logger.info("Running %r (from %s:%d)",
+                            stripped, script, line_no)
+                result = parsed.eval()
+                if isinstance(result, (list, tuple)):
+                    # result may be a list of formatted responses if using
+                    # tuples in the command itself ("user info (foo bar)")
+                    ret.extend(result)
+                    logger.info("Got %d results", len(result))
+                else:
+                    ret.append(result)
+                    logger.info("Got 1 result")
+            except BaseException as e:
+                logger.error("Error running %r (%s:%d)", stripped, script,
+                             line_no, exc_info=True)
                 if not ignore_errors:
                     ret.append('Error: %s' % str(e))
                     ret.append('Sourcing of %s aborted on line %d' % (script,
@@ -122,13 +134,12 @@ def source(bofh, ignore_errors=False, script=None):
                     ret.append(
                         'Hint: Use \'source --ignore-errors file\' to '
                         'ignore errors')
-                    return ret
+                    break
                 ret.append('Error: %s (on line %d)' % (str(e), line_no))
-
     return ret
 
 
-def script(bofh, file=None):
+def script(bofh, file=None, replace=False, encoding='utf-8'):
     """
     Open file, and set it as log file for reader
 
@@ -136,18 +147,20 @@ def script(bofh, file=None):
     :type bofh: bofh.proto.Bofh
     :param file:
     """
-    logger.debug('script(%r, file=%r)', bofh, file)
+    logger.debug('script(%s, file=%r, replace=%r, encoding=%r)',
+                 repr(bofh), file, replace, encoding)
     from . import readlineui
+    mode = 'w' if replace else 'a'
     if file:
-        readlineui.script_file = open(file, "wa")
-        return u"Copying output to %s" % file
+        readlineui.script_file = io.open(file, mode=mode, encoding=encoding)
+        return "Copying output to %s" % repr(file)
+    elif readlineui.script_file:
+        ret = "Closing current scriptfile, {file}".format(
+            file=readlineui.script_file.name)
+        readlineui.script_file.close()
+        readlineui.script_file = None
+        return ret
     else:
-        if readlineui.script_file:
-            ret = u"Closing current scriptfile, {file}".format(
-                file=readlineui.script_file.name)
-            readlineui.script_file.close()
-            readlineui.script_file = None
-            return ret
         return "No scriptfile currently open"
 
 
@@ -155,19 +168,16 @@ def quit(bofh):
     """
     Quit the programme
 
-    :param bofh: The bofh communicator
     :type bofh: bofh.proto.Bofh
     :raises: SystemExit (always)
     """
     logger.debug('quit(%r)', bofh)
-    import sys
-    sys.exit(0)
+    raise SystemExit(0)
 
 
 def commands(bofh):
     """List the commands available in bofh
 
-    :param bofh: The bofh communicator
     :type bofh: bofh.proto.Bofh
     :returns: A prettyprinted list of commands from bofh with args
     """
@@ -181,4 +191,4 @@ def commands(bofh):
             fullname = cmd._fullname
             wide = max(wide, len(fullname))
             ret.append([fullname, [grpname, cmdname] + map(unicode, cmd.args)])
-    return u"\n".join(map(lambda x: "%-*s -> %s" % tuple([wide] + x), ret))
+    return "\n".join(map(lambda x: "%-*s -> %s" % tuple([wide] + x), ret))

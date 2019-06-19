@@ -22,18 +22,49 @@ Interactive bofh client.
 This module implements a REPL for implementing an interactive bofh client, and
 readline command completion.
 """
-from __future__ import print_function
+from __future__ import print_function, unicode_literals
 
 import getpass
 import locale
 import logging
 import readline
 
+import six
+from six.moves import input as _raw_input
+
 from . import parser, proto
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_PROMPT = "bofh>>> "
+
+
+class IOUtil(object):
+    """
+    PY2 and PY3 compatible raw_input() and getpass.getpass()
+    """
+
+    def __init__(self, default_prompt=DEFAULT_PROMPT, encoding=None):
+        self.encoding = encoding or locale.getpreferredencoding()
+        self.default_prompt = default_prompt or ''
+
+    def get_input(self, prompt=None):
+        if prompt is None:
+            prompt = self.default_prompt
+        if six.PY2:
+            raw_text = _raw_input(prompt.encode(self.encoding))
+            return raw_text.decode(self.encoding)
+        else:
+            return _raw_input(prompt)
+
+    def get_secret(self, prompt=None):
+        if prompt is None:
+            prompt = self.default_prompt
+        if six.PY2:
+            raw_text = getpass.getpass(prompt.encode(self.encoding))
+            return raw_text.decode(self.encoding)
+        else:
+            return _raw_input(prompt)
 
 
 class BofhCompleter(object):
@@ -52,12 +83,12 @@ class BofhCompleter(object):
         :param encoding: The encoding used
         """
         self._bofh = bofh
-        # completes is tested and filled in __call__
-        self.completes = []
+        self.completes = tuple()
         self.encoding = encoding
 
     def __call__(self, text, num):
-        """Complete a text.
+        """
+        Complete a text.
 
         Readline will call this repeatedly with the
         same text parameter, and an increasing num
@@ -69,42 +100,63 @@ class BofhCompleter(object):
         :returns: The num'th completion or None when no more completions exists
         """
         if num == 0:
-            self._init_matches(text)
+            # Fetching first available completion, we'll need to initialize the
+            # possible matches.
+            self.completes = self._get_matches()
             if len(self.completes) == 1:
-                return self.completes[0] + u' '
+                # There is only one valid completion
+                return self.completes[0] + ' '
         try:
             return self.completes[num]
         except IndexError:
             return None
 
-    def _init_matches(self, text):
-        u"""Init matches for text"""
+    def _get_readline_buffer(self):
+        """Get the current readline buffer."""
+        line = readline.get_line_buffer()
+        if six.PY2 and self.encoding:
+            return line.decode(self.encoding)
+        else:
+            return line
+
+    def _get_matches(self):
+        """Fetch matches for the current readline buffer content."""
         # Get the readline buffer, parse, and lookup the parse object
         # to fill in the completions.
         # Note how the bofh.parser module carefully inserts completions.
-        line = readline.get_line_buffer().decode(self.encoding)
+        line = self._get_readline_buffer()
         # parse() raises exception when it could not make sense
         # of the input, but this should be fairly common for
         # completions
         try:
             parse = parser.parse(self._bofh, line)
-            self.completes = parse.complete(readline.get_begidx(),
-                                            readline.get_endidx())
-        except parser.NoGroup, e:
+            # Parse successful - this should mean that we matched something
+            completions = tuple(
+                parse.complete(readline.get_begidx(),
+                               readline.get_endidx()))
+        except parser.NoGroup as e:
+            # Did not get a single command?
             idx = readline.get_begidx()
             if idx == 0 or line[:idx].isspace():
-                self.completes = e.completions
-        except parser.IncompleteParse, e:
-            self.completes = e.parse.complete(readline.get_begidx(),
-                                              readline.get_endidx())
-        except:
-            import traceback
-            traceback.print_exc()
+                completions = tuple(e.completions)
+            else:
+                completions = tuple()
+        except parser.IncompleteParse as e:
+            # Incomplete () or ""?
+            completions = tuple(
+                e.parse.complete(readline.get_begidx(),
+                                 readline.get_endidx()))
+        except Exception:
+            # Unable to match anything?
+            logger.error("_init_matches", exc_info=True)
+            completions = tuple()
+        return completions
 
 
+# script_file is set to a unicode file descriptor by
+# bofh.internal_commands.script()
+# TODO: This should be implemented in some other way...
 script_file = None
-"""script_file is set to a file if commands should be logged.
-XXX: this should be moved elsewhere."""
 
 
 def prompter(prompt, mapping, help, default, argtype=None, optional=False):
@@ -130,16 +182,21 @@ def prompter(prompt, mapping, help, default, argtype=None, optional=False):
     :type argtype: unicode
     :optional: True if this arg is optional
     """
+    logger.debug('prompter(prompt=%s, mapping=%s, help=%s, default=%s,'
+                 ' argtype=%s, optional=%s)', repr(prompt), repr(mapping),
+                 repr(help), repr(default), repr(argtype), repr(optional))
     # tell the user about the default value by including it in the prompt
     if default is not None:
-        _prompt = u"%s [%s] > " % (prompt, default)
+        _prompt = "%s [%s] > " % (prompt, default)
     else:
-        _prompt = u"%s > " % prompt
+        _prompt = "%s > " % prompt
 
     # Simple method to select an inputfunc for asking user for data.
     # A dict is used to be able to extend this easily for other
     # types.
-    inputfunc = {'accountPassword': getpass.getpass}.get(argtype, raw_input)
+    ioutil = IOUtil(default_prompt=prompt)
+    inputfunc = {'accountPassword': ioutil.get_secret}.get(argtype,
+                                                           ioutil.get_input)
     map = []
 
     # format the mapping for the user
@@ -148,14 +205,14 @@ def prompter(prompt, mapping, help, default, argtype=None, optional=False):
         i = 1
         for line in mapping[1:]:
             map.append(line[0])
-            mapstr.append(u"%4s " % i + line[1])
+            mapstr.append("%4s " % i + line[1])
             i += 1
-        mapstr = u"\n".join(mapstr)
+        mapstr = "\n".join(mapstr)
     while True:
         if map:
             print(mapstr)
         # get input from user
-        val = inputfunc(_prompt).strip().decode(locale.getpreferredencoding())
+        val = inputfunc(_prompt).strip()
         # Lines read at this stage, are params to a command.
         # We remove them from the history.
         # Note that we only do this for non-empty lines! If we do it for all
@@ -173,9 +230,9 @@ def prompter(prompt, mapping, help, default, argtype=None, optional=False):
             return default
 
         # Print some help text
-        elif val == u'?':
+        elif val == '?':
             if help is None:
-                print(u"Sorry, no help available")
+                print("Sorry, no help available")
             else:
                 print(help)
         else:
@@ -188,9 +245,9 @@ def prompter(prompt, mapping, help, default, argtype=None, optional=False):
                         raise IndexError("Negative")
                     return map[i-1]
                 except ValueError:
-                    print(u"Please type a number matching one of the items")
+                    print("Please type a number matching one of the items")
                 except IndexError:
-                    print(u"The item you selected does not exist")
+                    print("The item you selected does not exist")
             else:
                 return val
 
@@ -207,50 +264,53 @@ def repl(bofh, charset=None, prompt=None):
     * loop back to start
 
     :param bofh: The bofh object
-    :param charset: The charset for raw_input, or None to find from system
+    :param charset: The charset for input, or None to find from system
     :param prompt: User defined prompt, if specified
     :raises: SystemExit
     """
     if not prompt:
         prompt = DEFAULT_PROMPT
-    else:
-        prompt = prompt.decode('string_escape')
 
     if charset is None:
         charset = locale.getpreferredencoding()
+
+    ioutil = IOUtil(default_prompt=prompt, encoding=charset)
+
     readline.parse_and_bind("tab: complete")
     readline.set_completer(BofhCompleter(bofh, charset))
     while True:
         # read input
         try:
-            line = raw_input(prompt.encode(charset)).decode(charset)
+            line = ioutil.get_input()
             logger.debug('got input %r', line)
             # If we get a blank line, we just continue
             if not line:
                 continue
         except EOFError:
-            logger.debug('EOFError on raw_input()', exc_info=True)
+            logger.debug('EOFError on input()', exc_info=True)
             print("So long, and thanks for all the fish!")
             return
         except KeyboardInterrupt:
-            logger.debug('KeyboardInterrupt on raw_input()', exc_info=True)
+            logger.debug('KeyboardInterrupt on input()', exc_info=True)
             print("")
             raise SystemExit()
         if script_file is not None:
-            script_file.write("%s %s\n" % (prompt, line.encode(charset)))
+            script_file.write("%s %s\n" % (prompt, line))
         try:
             # eval
             parse = parser.parse(bofh, line)
+            logger.debug("Got obj=%s, command=%r",
+                         repr(parse), repr(getattr(parse, 'command', None)))
             result = parse.eval(prompter=prompter)
+            logger.debug("Got result=%s", repr(result))
 
             if isinstance(result, list):
-                result = u'\n\n'.join(result)
+                result = '\n\n'.join(result)
 
-            # print
-            print(result.encode(charset))
+            print(result)
             if script_file is not None:
-                script_file.write(result.encode(charset))
-                script_file.write(u"\n".encode(charset))
+                script_file.write(result)
+                script_file.write("\n")
         except SystemExit:
             # raised in internal_commands.quit()
             logger.debug('SystemExit on parse/eval', exc_info=True)
@@ -265,19 +325,18 @@ def repl(bofh, charset=None, prompt=None):
         except proto.BofhError as e:
             logger.debug('protocol error on parse/eval', exc_info=True)
             # Error from the bofh server
-            print(e.args[0].encode(charset))
+            print(six.text_type(e.args[0]))
         except EOFError:
             # Sent from prompt func. Just ask for new command
             logger.debug('EOFError on parse/eval', exc_info=True)
             print()
         except parser.SynErr as e:
             logger.debug('syntax error on parse/eval', exc_info=True)
-            print(unicode(e).encode(charset))
+            print(six.text_type(e))
         except Exception:
-            logger.exception('Unhandled exception')
+            logger.error('Unhandled exception', exc_info=True)
             # Unknown exception, handle this
             # XXX: Handle parse errors
-            import traceback
-            traceback.print_exc()
             if script_file is not None:
+                import traceback
                 traceback.print_exc(file=script_file)
