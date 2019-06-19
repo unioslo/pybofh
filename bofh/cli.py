@@ -162,7 +162,8 @@ def main(inargs=None):
     try:
         bofh.readlineui.repl(conn, prompt=args.prompt)
     except Exception as e:
-        print('Error: {}'.format(e))
+        logger.error("Unhandled error", exc_info=True)
+        raise SystemExit('Error: {}'.format(e))
     finally:
         conn.logout()
 
