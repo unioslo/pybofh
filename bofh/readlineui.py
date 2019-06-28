@@ -64,7 +64,7 @@ class IOUtil(object):
             raw_text = getpass.getpass(prompt.encode(self.encoding))
             return raw_text.decode(self.encoding)
         else:
-            return _raw_input(prompt)
+            return getpass.getpass(prompt)
 
 
 class BofhCompleter(object):
