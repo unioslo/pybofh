@@ -117,7 +117,6 @@ def main():
         data_files=[('share/pybofh', ['data/cacerts.pem', ]), ],
         entry_points={
             'console_scripts': [
-                'bofh = bofh.cli:main',
                 'pybofh = bofh.cli:main',
             ],
         },
