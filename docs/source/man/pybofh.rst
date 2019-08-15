@@ -26,8 +26,7 @@ Options
 
    Display the current :program:`pybofh` version.
 
-
-.. rubric:: Connection Options
+.. .. rubric:: Connection Options
 
 .. option:: --url <url>
 
@@ -70,8 +69,7 @@ Options
    This will cause the client to abort if no connection can be established
    within ``<seconds>`` seconds.
 
-
-.. rubric:: Output Options
+.. .. rubric:: Output Options
 
 .. option:: -p <prompt>, --prompt <prompt>
 
