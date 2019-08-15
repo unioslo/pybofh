@@ -141,8 +141,8 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     (
-        'man/bofh',
-        'bofh',
+        'man/pybofh',
+        'pybofh',
         'The Cerebrum command line interface',
         [author, ],
         1,

@@ -1,22 +1,22 @@
-bofh
-====
+pybofh
+======
 
 Synopsis
 --------
 
-**bofh** [*options*]
+**pybofh** [*options*]
 
 
 Description
 -----------
 
-:program:`bofh` starts an interactive command line client for communicating with
+:program:`pybofh` starts an interactive command line client for communicating with
 the Cerebrum XMLRPC server.
 
 
 Options
 -------
-.. program:: bofh
+.. program:: pybofh
 
 .. option:: -h, --help
 
@@ -24,7 +24,7 @@ Options
 
 .. option:: --version
 
-   Display the current :program:`bofh` version.
+   Display the current :program:`pybofh` version.
 
 
 .. rubric:: Connection Options
