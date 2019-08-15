@@ -68,12 +68,12 @@ def complete_url(url):
 
 
 def setup_logging(verbosity):
-    """ configure logging if verbosity is not None """
-    if verbosity is None:
+    """ configure logging. """
+    if verbosity < 0:
         root = logging.getLogger()
         root.addHandler(logging.NullHandler())
     else:
-        level = bofh.config.get_verbosity(int(verbosity) - 1)
+        level = bofh.config.get_verbosity(int(verbosity))
         bofh.config.configure_logging(level)
 
 
@@ -170,13 +170,21 @@ def main(inargs=None):
         help="use a custom prompt (default: %(default)r)",
         metavar='PROMPT',
     )
-    output_args.add_argument(
+    log_verbosity = output_args.add_mutually_exclusive_group()
+    log_verbosity.add_argument(
         '-v', '--verbosity',
         dest='verbosity',
         action='count',
-        default=None,
-        help="show debug messages on stderr",
+        help="increase verbosity of log messages (warning, info, debug)",
     )
+    log_verbosity.add_argument(
+        '-q', '--quiet',
+        dest='verbosity',
+        action='store_const',
+        const=-1,
+        help="silence all log messages",
+    )
+    log_verbosity.set_defaults(verbosity=0)
 
     parser.add_argument(
         '--cmd',
