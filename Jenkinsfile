@@ -4,13 +4,13 @@ def version = '0.0.0'
 def docdir = 'pybofh-docs'
 
 pipeline {
-    agent { label 'python2' }
+    agent { label 'python' }
     stages {
         stage('Gather facts') {
             steps {
                 script {
                     version = sh (
-                        script: 'python2.7 setup.py --version',
+                        script: 'python setup.py --version',
                         returnStdout: true,
                     ).trim()
                     echo "version: ${version}"
@@ -24,7 +24,7 @@ pipeline {
         }
         stage('Build source distribution') {
             steps {
-                sh 'python2.7 setup.py sdist'
+                sh 'python setup.py sdist'
                 archiveArtifacts artifacts: 'dist/pybofh-*.tar.gz'
             }
         }
@@ -34,7 +34,7 @@ pipeline {
                     docdir = "pybofh-docs-${version}"
                 }
                 sh """
-                python2.7 setup.py build_sphinx
+                python setup.py build_sphinx
                 mv build/sphinx/html "build/sphinx/${docdir}"
                 tar -czv -C build/sphinx -f "${docdir}.tar.gz" "${docdir}"
                 """
