@@ -172,10 +172,17 @@ def main(inargs=None):
     )
     log_verbosity = output_args.add_mutually_exclusive_group()
     log_verbosity.add_argument(
-        '-v', '--verbosity',
+        '-v',
         dest='verbosity',
         action='count',
         help="increase verbosity of log messages (warning, info, debug)",
+    )
+    log_verbosity.add_argument(
+        '--verbosity',
+        dest='verbosity',
+        type=int,
+        help="set verbosity of log messages to %(metavar)s",
+        metavar='N',
     )
     log_verbosity.add_argument(
         '-q', '--quiet',
