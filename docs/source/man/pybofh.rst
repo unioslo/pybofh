@@ -26,10 +26,16 @@ Options
 
    Display the current :program:`pybofh` version.
 
+.. option:: --cmd=<command>
 
-.. rubric:: Connection Options
+   Run ``<command>`` and exit.  This option can be repeated for running multiple
+   commands.
 
-.. option:: --url <url>
+
+Connection Options
+^^^^^^^^^^^^^^^^^^
+
+.. option:: --url=<url>
 
    Connect to an XMLRPC server at the given ``<url>``.
 
@@ -37,13 +43,13 @@ Options
    This default can be changed by setting the environment variable
    ``PYBOFH_DEFAULT_URL``.
 
-.. option:: -u <username>, --user <username>
+.. option:: -u <username>, --user=<username>
 
    Log in to the server using the given ``<username>``.
 
    The client will *always* prompt for the password before connecting.
 
-.. option:: -c <filename>, --cert <filename>
+.. option:: -c <filename>, --cert=<filename>
 
    Use CA-certificates from ``<filename>``.
 
@@ -63,7 +69,7 @@ Options
    in the server certificate, either as the ``CN`` name, or as a name in a
    X509v3 subjectAltName extension.
 
-.. option:: --timeout <seconds>
+.. option:: --timeout=<seconds>
 
    Set a timeout for connections.
 
@@ -71,21 +77,21 @@ Options
    within ``<seconds>`` seconds.
 
 
-.. rubric:: Output Options
+Output Options
+^^^^^^^^^^^^^^
 
-.. option:: -p <prompt>, --prompt <prompt>
+.. option:: -p <prompt>, --prompt=<prompt>
 
    Sets the interactive prompt for entering commands.
 
-.. option:: -v, --verbosity [debug-level]
+.. option:: -v, --verbosity=<level>
 
-   Sets the verbosity for debug output.
+   Sets the verbosity for debug output (log messages).  By default these
+   messages are suppressed.
 
-   By default, all log messages with level ``ERROR`` or above is printed to
-   ``stderr``.  Increasing the verbosity will cause more log levels to be
-   included in this output.  The ``-v`` flag can be repeated, or the verbosity
-   level can be set with ``--verbisity N``, where ``N`` is the desired
-   verbosity.
+   The ``-v`` flag can be repeated for more verbose output, or set explicitly
+   with ``--verbosity=<level>``.  Each level drops the log level filter down a
+   step, through ERROR (0), WARNING (1), INFO (2), and DEBUG (3).
 
 .. option:: -q, --quiet
 
