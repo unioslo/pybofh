@@ -45,7 +45,7 @@ class SynErr(Exception):
 
     def __str__(self):
         if self.index is None:
-            return "Syntax error"
+            return "Syntax error: %s" % (self.msg,)
         return "Syntax error at col %s: %s" % (self.index, self.msg)
 
 
@@ -170,8 +170,9 @@ class BofhCommand(Command):
         try:
             return self.command(prompter=prompter, *args)
         except AttributeError:
-            logger.debug("unable to run %r with %r",
-                         self.command, args, exc_info=True)
+            logger.debug("unable to run %r, command=%r, args=%r",
+                         self.line, getattr(self, 'command', None), args,
+                         exc_info=True)
             # TODO: This is probably the wrong exception to re-raise
             raise NoGroup(None, args)
 
