@@ -46,7 +46,9 @@ class SynErr(Exception):
     def __str__(self):
         if self.index is None:
             return "Syntax error: %s" % (self.msg,)
-        return "{}: [{}]".format(self.msg, ", ".join(self.completions))
+        if self.completions:
+            return "{}: [{}]".format(self.msg, ", ".join(self.completions))
+        return "{}".format(self.msg)
 
 
 class IncompleteParse(SynErr):
