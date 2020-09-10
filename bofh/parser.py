@@ -38,24 +38,27 @@ logger = logging.getLogger(__name__)
 @six.python_2_unicode_compatible
 class SynErr(Exception):
     """Base class for all command syntax errors."""
-    def __init__(self, msg, index=None):
+    def __init__(self, msg, index=None, completions=None):
         super(SynErr, self).__init__(msg)
         self.index = index
         self.msg = msg
+        self.completions = completions
 
     def __str__(self):
         if self.index is None:
             return "Syntax error: %s" % (self.msg,)
-        return "Syntax error at col %s: %s" % (self.index, self.msg)
+        if self.completions:
+            return "{}: [{}]".format(self.msg, ", ".join(self.completions))
+        return "{}".format(self.msg)
 
 
 class IncompleteParse(SynErr):
     """Parser ran off end without finding matching " or )"""
 
     def __init__(self, msg, parse, expected):
-        super(IncompleteParse, self).__init__(msg, -1)
         self.parse = parse
         self.completions = expected
+        super(IncompleteParse, self).__init__(msg, -1, self.completions)
 
 
 class NoGroup(SynErr):
@@ -68,7 +71,7 @@ class NoGroup(SynErr):
     # TODO: This should be renamed, e.g. to NoCommand()
 
     def __init__(self, parse, completions):
-        super(NoGroup, self).__init__("No matching command", 0)
+        super(NoGroup, self).__init__("Unknown command", 0)
         self.parse = parse
         self.completions = completions
 
@@ -562,7 +565,7 @@ def parse_string(lex, expected=None):
     try:
         val, idx = next(lex)
     except StopIteration:
-        raise IncompleteParse("Expected string, got nothing", "",
+        raise IncompleteParse("Incomplete command, possible subcommands", "",
                               expected)
     if idx == -1:
         # XXX: Do sane stuff here
