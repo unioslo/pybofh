@@ -42,6 +42,7 @@ class SynErr(Exception):
         super(SynErr, self).__init__(msg)
         self.index = index
         self.msg = msg
+        self.completions = completions
 
     def __str__(self):
         if self.index is None:
