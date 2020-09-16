@@ -27,6 +27,7 @@ from __future__ import print_function, unicode_literals
 import getpass
 import locale
 import logging
+import re
 import readline
 
 import six
@@ -217,7 +218,8 @@ def prompter(prompt, mapping, help, default, argtype=None, optional=False):
         # We remove them from the history.
         # Note that we only do this for non-empty lines! If we do it for all
         # lines, we would remove history that should not be removed ;)
-        if val:
+        # Only delete if there are history items
+        if val and 0 < readline.get_current_history_length():
             rlh_to_delete = readline.get_current_history_length()
             readline.remove_history_item(rlh_to_delete-1)
 
@@ -240,11 +242,14 @@ def prompter(prompt, mapping, help, default, argtype=None, optional=False):
             # else just return what the user typed.
             if map:
                 try:
-                    i = int(val)
-                    if i < 1:
-                        raise IndexError("Negative")
-                    return map[i-1]
-                except ValueError:
+                    if re.compile(r"^\d+$").match(val):  # Single digit
+                        value = int(val)
+                        if value <= 0:
+                            return IndexError("Negative")
+                        return map[value - 1]
+                    else:
+                        return val  # Throw input to Cereberum, to handle range
+                except ValueError:  # e.g. in the command misc print_passwords
                     print("Please type a number matching one of the items")
                 except IndexError:
                     print("The item you selected does not exist")
