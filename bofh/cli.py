@@ -90,11 +90,11 @@ def get_default_encoding():
             return encoding
 
 
-def bofh_eval(conn, line):
+def bofh_eval(conn, line, prompt):
     parse = bofh.parser.parse(conn, line)
     logger.debug("Got obj=%s, command=%r",
                  repr(parse), repr(getattr(parse, 'command', None)))
-    result = parse.eval(prompter=None)
+    result = parse.eval(prompter=None, prompt=prompt)
     logger.debug("Got result=%s", repr(result))
     if isinstance(result, list):
         result = '\n\n'.join(result)
@@ -231,7 +231,7 @@ def main(inargs=None):
                 print(args.prompt + command)
                 # ugh
                 sys.stdout.flush()
-                print(bofh_eval(conn, command))
+                print(bofh_eval(conn, command, args.prompt))
         else:
             bofh.readlineui.repl(conn, prompt=args.prompt)
     except Exception as e:

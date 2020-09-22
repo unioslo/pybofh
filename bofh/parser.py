@@ -114,11 +114,12 @@ class Command(object):
                 return i
         return None, -1, []
 
-    def eval(self, prompter=None):
+    def eval(self, prompter=None, prompt=None):
         """
         Evaluate the parsed expression.
 
         :param prompter: Callable to get single input item
+        :param prompt: Prompt string given as argument to bofh
         """
         return "Command: '{}' not implemented".format(
             " ".join(x[0] for x in self.args))
@@ -180,7 +181,7 @@ class BofhCommand(Command):
 class InternalCommand(Command):
     """A command object for an internal command."""
 
-    def eval(self, *rest, **kw):
+    def eval(self, prompt=None, *rest, **kw):
         """
         Evaluate internal commands.
 
@@ -190,7 +191,7 @@ class InternalCommand(Command):
         args = list(_prepare_args(self.args))
         cmdname = args.pop(0)
         cmdref = getattr(where, cmdname)
-        return cmdref(self.bofh, *args)
+        return cmdref(self.bofh, *args, prompt=prompt)
 
 
 class HelpCommand(InternalCommand):

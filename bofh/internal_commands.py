@@ -41,6 +41,8 @@ import io
 import logging
 import os
 
+from bofh.readlineui import DEFAULT_PROMPT
+
 # Helptexts for the help() function
 _helptexts = {
     'commands': "commands -- list commands",
@@ -52,7 +54,7 @@ _helptexts = {
 logger = logging.getLogger(__name__)
 
 
-def help(bofh, *args):
+def help(bofh, *args, **kw):
     """
     The help command.
 
@@ -81,7 +83,8 @@ def help(bofh, *args):
     return bofh.help(*args)
 
 
-def source(bofh, ignore_errors=False, script=None, encoding='utf-8'):
+def source(bofh, ignore_errors=False, script=None, encoding='utf-8',
+           prompt=None):
     """
     Read lines from file, parse, and execute each line.
 
@@ -90,6 +93,7 @@ def source(bofh, ignore_errors=False, script=None, encoding='utf-8'):
     :type bofh: bofh.proto.Bofh
     :param ignore_errors: Do not propagate an exception, but continue.
     :param script: The script fie to execute.
+    :param prompt: Prompt string given as argument to bofh
     """
     logger.debug('source(%s, ignore_errors=%r, script=%r, encoding=%r)',
                  repr(bofh), ignore_errors, script, encoding)
@@ -102,6 +106,8 @@ def source(bofh, ignore_errors=False, script=None, encoding='utf-8'):
         script = os.path.expanduser(script)
     if not os.path.isfile(script):
         return 'Filename "{}" does not exist.'.format(script)
+    if not prompt:
+        prompt = DEFAULT_PROMPT
 
     ret = []
 
@@ -115,7 +121,7 @@ def source(bofh, ignore_errors=False, script=None, encoding='utf-8'):
                 parsed = parse(bofh, stripped)
                 logger.info("Running %r (from %s:%d)",
                             stripped, script, line_no)
-                result = parsed.eval()
+                result = '%s%s\n' % (prompt, stripped) + parsed.eval()
                 if isinstance(result, (list, tuple)):
                     # result may be a list of formatted responses if using
                     # tuples in the command itself ("user info (foo bar)")
@@ -139,7 +145,7 @@ def source(bofh, ignore_errors=False, script=None, encoding='utf-8'):
     return ret
 
 
-def script(bofh, file=None, replace=False, encoding='utf-8'):
+def script(bofh, file=None, replace=False, encoding='utf-8', **kw):
     """
     Open file, and set it as log file for reader
 
