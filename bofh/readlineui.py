@@ -295,13 +295,13 @@ def repl(bofh, charset=None, prompt=None):
             print("")
             raise SystemExit()
         if script_file is not None:
-            script_file.write("%s %s\n" % (prompt, line))
+            script_file.write("%s%s\n" % (prompt, line))
         try:
             # eval
             parse = parser.parse(bofh, line)
             logger.debug("Got obj=%s, command=%r",
                          repr(parse), repr(getattr(parse, 'command', None)))
-            result = parse.eval(prompter=prompter)
+            result = parse.eval(prompter=prompter, prompt=prompt)
             logger.debug("Got result=%s", repr(result))
 
             if isinstance(result, list):
