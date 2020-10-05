@@ -456,7 +456,7 @@ class Bofh(object):
                 epkg = 'Cerebrum.modules.bofhd.errors.'
                 if e.faultString.startswith(epkg + 'ServerRestartedError:'):
                     self._init_commands(reset=True)
-                    return wash_response(fn(self._session, *args))
+                    return run_command()
                 elif e.faultString.startswith(epkg + 'SessionExpiredError:'):
                     raise SessionExpiredError("Session expired",
                                               run_command)
