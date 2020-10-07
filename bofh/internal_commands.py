@@ -80,7 +80,10 @@ def help(bofh, *args, **kw):
         if arg in _helptexts:
             return _helptexts[arg]
         return bofh.help(arg)
-    return bofh.help(*args)
+    help_text = bofh.help(*args)
+    if not help_text:
+        help_text = "No help text found"
+    return help_text
 
 
 def source(bofh, ignore_errors=False, script=None, encoding='utf-8',
