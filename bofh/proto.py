@@ -400,8 +400,7 @@ class Bofh(object):
             args['timeout'] = timeout
 
         if parts.scheme == 'https':
-            if 'context' is not None:
-                args['context'] = context
+            args['context'] = context
             self._connection = _xmlrpc.ServerProxy(
                 url,
                 transport=https.SafeTransport(**args))
