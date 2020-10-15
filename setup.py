@@ -98,7 +98,7 @@ def main():
 
     setuptools.setup(
         name='pybofh',
-        description='Cerebrum Bofh client',
+        description='Cerebrum bofh client',
         long_description=get_textfile('README.md'),
         long_description_content_type='text/markdown',
 
@@ -134,7 +134,7 @@ def main():
             'Topic :: Software Development :: Libraries',
             'Topic :: System :: Systems Administration',
         ],
-        keywords='cerebrum xmlrpc client',
+        keywords='cerebrum bofh xmlrpc client',
     )
 
 
