@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
+# Copyright 2010-2020 University of Oslo
 #
-# Copyright 2010-2018 University of Oslo, Norway
-#
-# This file is part of PyBofh.
+# This file is part of pybofh.
 #
 # PyBofh is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 # You should have received a copy of the GNU General Public License
 # along with PyBofh; if not, write to the Free Software Foundation,
 # Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+
 import codecs
 import io
 import sys
@@ -127,6 +128,9 @@ def main():
             'License :: OSI Approved :: GNU General Public License v3',
             'Programming Language :: Python :: 2.7',
             'Programming Language :: Python :: 3.6',
+            'Programming Language :: Python :: 3.7',
+            'Programming Language :: Python :: 3.8',
+            'Programming Language :: Python :: 3.9',
             'Topic :: Software Development :: Libraries',
             'Topic :: System :: Systems Administration',
         ],
