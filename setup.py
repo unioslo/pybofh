@@ -102,7 +102,7 @@ def main():
         long_description=get_textfile('README.md'),
         long_description_content_type='text/markdown',
 
-        url='https://bitbucket.usit.uio.no/projects/CRB/repos/pybofh',
+        url='https://github.com/unioslo/pybofh',
         author='USIT, University of Oslo',
         author_email='bnt-int@usit.uio.no',
         license='GPLv3',
