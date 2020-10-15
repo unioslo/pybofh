@@ -24,7 +24,7 @@ import io
 import sys
 
 import setuptools
-import setuptools.command.test
+from setuptools.command.test import test as TestCommand
 
 
 def mock_mbcs_windows():
@@ -61,17 +61,11 @@ def get_packages():
     return setuptools.find_packages('.', include=('bofh', 'bofh.*'))
 
 
-class PyTest(setuptools.command.test.test):
-    """ Run tests using pytest.
-
-    From `http://doc.pytest.org/en/latest/goodpractices.html`.
-
-    """
-
+class PyTest(TestCommand):
     user_options = [('pytest-args=', 'a', "Arguments to pass to pytest")]
 
     def initialize_options(self):
-        super().initialize_options()
+        TestCommand.initialize_options(self)
         self.pytest_args = []
 
     def run_tests(self):
@@ -135,6 +129,7 @@ def main():
             'Topic :: System :: Systems Administration',
         ],
         keywords='cerebrum bofh xmlrpc client',
+        cmdclass={'test': PyTest},
     )
 
 
