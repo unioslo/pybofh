@@ -114,7 +114,7 @@ def main():
         tests_require=test_requirements,
 
         packages=get_packages(),
-        package_data={'bofh.ext': ['LICENCE.txt', 'README.md'], },
+        package_data={'bofh.ext': ['COPYING', 'README.md'], },
         data_files=[('share/pybofh', ['data/cacerts.pem', ]), ],
         entry_points={
             'console_scripts': [
