@@ -61,21 +61,22 @@ def get_packages():
     return setuptools.find_packages('.', include=('bofh', 'bofh.*'))
 
 
-class PyTest(TestCommand):
-    user_options = [('pytest-args=', 'a', "Arguments to pass to pytest")]
+class Tox(TestCommand):
+    user_options = [('tox-args=', None, "Arguments to pass to tox")]
 
     def initialize_options(self):
         TestCommand.initialize_options(self)
-        self.pytest_args = []
+        self.tox_args = ''
+
+    def finalize_options(self):
+        TestCommand.finalize_options(self)
+        self.test_args = []
+        self.test_suite = True
 
     def run_tests(self):
-        import shlex
-        import pytest
-        args = self.pytest_args
-        if args:
-            args = shlex.split(args)
-        errno = pytest.main(args)
-        raise SystemExit(errno)
+        import tox
+        errno = tox.cmdline(args=self.tox_args.split())
+        sys.exit(errno)
 
 
 def main():
@@ -129,7 +130,7 @@ def main():
             'Topic :: System :: Systems Administration',
         ],
         keywords='cerebrum bofh xmlrpc client',
-        cmdclass={'test': PyTest},
+        cmdclass={'test': Tox},
     )
 
 
