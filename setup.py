@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
+# Copyright 2010-2020 University of Oslo
 #
-# Copyright 2010-2018 University of Oslo, Norway
-#
-# This file is part of PyBofh.
+# This file is part of pybofh.
 #
 # PyBofh is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
@@ -18,12 +18,13 @@
 # You should have received a copy of the GNU General Public License
 # along with PyBofh; if not, write to the Free Software Foundation,
 # Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+
 import codecs
 import io
 import sys
 
 import setuptools
-import setuptools.command.test
+from setuptools.command.test import test as TestCommand
 
 
 def mock_mbcs_windows():
@@ -60,27 +61,22 @@ def get_packages():
     return setuptools.find_packages('.', include=('bofh', 'bofh.*'))
 
 
-class PyTest(setuptools.command.test.test):
-    """ Run tests using pytest.
-
-    From `http://doc.pytest.org/en/latest/goodpractices.html`.
-
-    """
-
-    user_options = [('pytest-args=', 'a', "Arguments to pass to pytest")]
+class Tox(TestCommand):
+    user_options = [('tox-args=', None, "Arguments to pass to tox")]
 
     def initialize_options(self):
-        super().initialize_options()
-        self.pytest_args = []
+        TestCommand.initialize_options(self)
+        self.tox_args = ''
+
+    def finalize_options(self):
+        TestCommand.finalize_options(self)
+        self.test_args = []
+        self.test_suite = True
 
     def run_tests(self):
-        import shlex
-        import pytest
-        args = self.pytest_args
-        if args:
-            args = shlex.split(args)
-        errno = pytest.main(args)
-        raise SystemExit(errno)
+        import tox
+        errno = tox.cmdline(args=self.tox_args.split())
+        sys.exit(errno)
 
 
 def main():
@@ -97,11 +93,11 @@ def main():
 
     setuptools.setup(
         name='pybofh',
-        description='Cerebrum Bofh client',
+        description='Cerebrum bofh client',
         long_description=get_textfile('README.md'),
         long_description_content_type='text/markdown',
 
-        url='https://bitbucket.usit.uio.no/projects/CRB/repos/pybofh',
+        url='https://github.com/unioslo/pybofh',
         author='USIT, University of Oslo',
         author_email='bnt-int@usit.uio.no',
         license='GPLv3',
@@ -113,7 +109,7 @@ def main():
         tests_require=test_requirements,
 
         packages=get_packages(),
-        package_data={'bofh.ext': ['LICENCE.txt', 'README.md'], },
+        package_data={'bofh.ext': ['COPYING', 'README.md'], },
         data_files=[('share/pybofh', ['data/cacerts.pem', ]), ],
         entry_points={
             'console_scripts': [
@@ -127,10 +123,14 @@ def main():
             'License :: OSI Approved :: GNU General Public License v3',
             'Programming Language :: Python :: 2.7',
             'Programming Language :: Python :: 3.6',
+            'Programming Language :: Python :: 3.7',
+            'Programming Language :: Python :: 3.8',
+            'Programming Language :: Python :: 3.9',
             'Topic :: Software Development :: Libraries',
             'Topic :: System :: Systems Administration',
         ],
-        keywords='cerebrum xmlrpc client',
+        keywords='cerebrum bofh xmlrpc client',
+        cmdclass={'test': Tox},
     )
 
 
