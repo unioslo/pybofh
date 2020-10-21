@@ -19,12 +19,21 @@
 # along with PyBofh; if not, write to the Free Software Foundation,
 # Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 
+from __future__ import print_function
+
 import codecs
 import io
+import os
+import shutil
 import sys
 
 import setuptools
+from setuptools import Command
 from setuptools.command.test import test as TestCommand
+
+
+here = os.path.abspath(os.path.dirname(__file__))
+dist = os.path.join(here, "dist")
 
 
 def mock_mbcs_windows():
@@ -59,6 +68,32 @@ def get_textfile(filename):
 def get_packages():
     """ List of (sub)packages to install. """
     return setuptools.find_packages('.', include=('bofh', 'bofh.*'))
+
+
+class Publish(Command):
+    """Support publishing to PyPI via setup.py."""
+
+    description = "Build and publish package."
+    user_options = [("repository=", None, "target package index (default: pypi)")]
+
+    def initialize_options(self):
+        self.repository = "pypi"
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        if os.path.isdir(dist):
+            print("cleaning previous builds")
+            shutil.rmtree(dist)
+
+        print("building source distribution")
+        execl(sys.executable, "setup.py sdist")
+
+        print("uploading to %s via twine" % self.repository)
+        execl("twine", "upload", "--repository", self.repository, "dist/*")
+
+        # TODO(andretol): consider git tagging here
 
 
 class Tox(TestCommand):
@@ -130,8 +165,21 @@ def main():
             'Topic :: System :: Systems Administration',
         ],
         keywords='cerebrum bofh xmlrpc client',
-        cmdclass={'test': Tox},
+        cmdclass={
+            'test': Tox,
+            'publish': Publish,
+        },
     )
+
+
+def execl(path, *args):
+    exit_code = os.system("%s %s" % (path, " ".join(args)))
+    if exit_code != 0:
+        fatal("%s ended with exit code: %s" % (path, exit_code))
+
+
+def fatal(*args):
+    raise SystemExit("error: %s" % " ".join(args))
 
 
 if __name__ == '__main__':
