@@ -127,7 +127,7 @@ def main():
         mock_mbcs_windows()
 
     setuptools.setup(
-        name='pybofh',
+        name='bofh',
         description='Cerebrum bofh client',
         long_description=get_textfile('README.md'),
         long_description_content_type='text/markdown',
