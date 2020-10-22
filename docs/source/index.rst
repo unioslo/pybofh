@@ -1,8 +1,12 @@
 pybofh documentation
 ====================
 
-``pybofh`` is an interactive XMLRPC client for a ``Cerebrum.modules.bofhd``
-server. If you don't know what `Cerebrum`_ is, you probably don't want this.
+*pybofh*, short for *brukerorganisering for hvermannsen*, is a `Cerebrum`_
+administration tool.
+
+It is an interactive XML/RPC CLI client for a ``Cerebrum.modules.bofhd``
+server.  It is unlikely you want to use this software unless you know
+what Cerebrum is.
 
 .. toctree::
    :titlesonly:
@@ -14,7 +18,7 @@ server. If you don't know what `Cerebrum`_ is, you probably don't want this.
 
 
 .. toctree::
-   :caption: scripts
+   :caption: Scripts
    :maxdepth: 1
    :glob:
 
@@ -22,7 +26,7 @@ server. If you don't know what `Cerebrum`_ is, you probably don't want this.
 
 
 .. toctree::
-   :caption: modules
+   :caption: Modules
    :maxdepth: 1
    :glob:
 

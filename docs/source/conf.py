@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.abspath('../../'))
 # -- Project information -----------------------------------------------------
 INITIAL_YEAR = 2018  # Initial year of *documentation*?
 
-project = 'pybofh'
+project = 'bofh'
 author = 'University of Oslo'
 copyright = '{when}, {who}'.format(
     when=('%d - %d' % (INITIAL_YEAR, _now.year)
