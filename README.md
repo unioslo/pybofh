@@ -85,6 +85,7 @@ built with:
 For other documentation formats, see [docs/README.md] and [docs/Makefile].
 
 
+[Cerebrum]: https://github.com/unioslo/cerebrum
 [docs/Makefile]: https://github.com/unioslo/pybofh/blob/master/docs/Makefile
 [docs/README.md]: https://github.com/unioslo/pybofh/blob/master/docs/README.md
 [docs/requirements.txt]: https://github.com/unioslo/pybofh/blob/master/requirements.txt
