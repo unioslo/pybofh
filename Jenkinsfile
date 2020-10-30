@@ -1,7 +1,7 @@
 #!/usr/bin/env groovy
 
 def version = '0.0.0'
-def docdir = 'pybofh-docs'
+def docdir = 'bofh-docs'
 
 pipeline {
     agent { label 'python' }
@@ -25,13 +25,13 @@ pipeline {
         stage('Build source distribution') {
             steps {
                 sh 'python setup.py sdist'
-                archiveArtifacts artifacts: 'dist/pybofh-*.tar.gz'
+                archiveArtifacts artifacts: 'dist/bofh-*.tar.gz'
             }
         }
         stage('Build documentation') {
             steps {
                 script {
-                    docdir = "pybofh-docs-${version}"
+                    docdir = "bofh-docs-${version}"
                 }
                 sh """
                 python setup.py build_sphinx
@@ -49,7 +49,7 @@ pipeline {
         cleanup {
             sh 'rm -vf junit*.xml'
             sh 'rm -vrf build dist'
-            sh 'rm -vf pybofh-docs*.tar.gz'
+            sh 'rm -vf bofh-docs*.tar.gz'
         }
     }
 }

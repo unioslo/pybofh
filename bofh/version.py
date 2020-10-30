@@ -21,11 +21,11 @@ import os
 import pkg_resources
 
 
-DISTRIBUTION_NAME = 'pybofh'
+DISTRIBUTION_NAME = 'bofh'
 
 
 def get_distribution():
-    """ Get a distribution object for pybofh. """
+    """Get a distribution object for bofh."""
     try:
         return pkg_resources.get_distribution(DISTRIBUTION_NAME)
     except pkg_resources.DistributionNotFound:

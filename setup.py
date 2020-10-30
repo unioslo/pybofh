@@ -19,12 +19,21 @@
 # along with PyBofh; if not, write to the Free Software Foundation,
 # Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 
+from __future__ import print_function
+
 import codecs
 import io
+import os
+import shutil
 import sys
 
 import setuptools
+from setuptools import Command
 from setuptools.command.test import test as TestCommand
+
+
+here = os.path.abspath(os.path.dirname(__file__))
+dist = os.path.join(here, "dist")
 
 
 def mock_mbcs_windows():
@@ -61,6 +70,32 @@ def get_packages():
     return setuptools.find_packages('.', include=('bofh', 'bofh.*'))
 
 
+class Publish(Command):
+    """Support publishing to PyPI via setup.py."""
+
+    description = "Build and publish package."
+    user_options = [("repository=", None, "target package index (default: pypi)")]
+
+    def initialize_options(self):
+        self.repository = "pypi"
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        if os.path.isdir(dist):
+            print("cleaning previous builds")
+            shutil.rmtree(dist)
+
+        print("building source distribution")
+        execl(sys.executable, "setup.py sdist")
+
+        print("uploading to %s via twine" % self.repository)
+        execl("twine", "upload", "--repository", self.repository, "dist/*")
+
+        # TODO(andretol): consider git tagging here
+
+
 class Tox(TestCommand):
     user_options = [('tox-args=', None, "Arguments to pass to tox")]
 
@@ -92,7 +127,7 @@ def main():
         mock_mbcs_windows()
 
     setuptools.setup(
-        name='pybofh',
+        name='bofh',
         description='Cerebrum bofh client',
         long_description=get_textfile('README.md'),
         long_description_content_type='text/markdown',
@@ -120,7 +155,7 @@ def main():
             'Development Status :: 4 - Beta',
             'Environment :: Console',
             'Intended Audience :: System Administrators',
-            'License :: OSI Approved :: GNU General Public License v3',
+            'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
             'Programming Language :: Python :: 2.7',
             'Programming Language :: Python :: 3.6',
             'Programming Language :: Python :: 3.7',
@@ -130,8 +165,21 @@ def main():
             'Topic :: System :: Systems Administration',
         ],
         keywords='cerebrum bofh xmlrpc client',
-        cmdclass={'test': Tox},
+        cmdclass={
+            'test': Tox,
+            'publish': Publish,
+        },
     )
+
+
+def execl(path, *args):
+    exit_code = os.system("%s %s" % (path, " ".join(args)))
+    if exit_code != 0:
+        fatal("%s ended with exit code: %s" % (path, exit_code))
+
+
+def fatal(*args):
+    raise SystemExit("error: %s" % " ".join(args))
 
 
 if __name__ == '__main__':

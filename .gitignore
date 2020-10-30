@@ -1,5 +1,6 @@
 *.egg-info/
 *.py[cod]
+*.nfs*
 .cache/
 .eggs/
 .pytest_cache/
