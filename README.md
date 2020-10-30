@@ -85,7 +85,7 @@ built with:
 For other documentation formats, see [docs/README.md] and [docs/Makefile].
 
 
-[docs/Makefile]: docs/Makefile
-[docs/README.md]: docs/README.md
-[docs/requirements.txt]: docs/requirements.txt
+[docs/Makefile]: https://github.com/unioslo/pybofh/blob/master/docs/Makefile
+[docs/README.md]: https://github.com/unioslo/pybofh/blob/master/docs/README.md
+[docs/requirements.txt]: https://github.com/unioslo/pybofh/blob/master/requirements.txt
 [virtualenv]: https://virtualenv.pypa.io/
