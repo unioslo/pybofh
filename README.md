@@ -12,8 +12,8 @@ software unless you know what Cerebrum is.
 Install
 -------
 
-bofh is implemented in Python and supports Python runtimes 2.7 (>= 2.7.9,
->= RHEL7 2.7.5), and 3.6 or newer.
+bofh is implemented in Python and supports Python runtimes 2.7
+(>= 2.7.9, >= RHEL7 2.7.5), and 3.6 or newer.
 
 If you are on RHEL we recommend that you install the bofh RPM package
 from the university package repository:
