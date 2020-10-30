@@ -5,13 +5,13 @@ Developing pybofh
 
 Environment
 -----------
-Install pybofh into a `virtualenv`_ using `pip`_ to test your ongoing changes:
 
-::
+Install bofh into a `virtualenv`_ using `pip`_ to test your ongoing
+changes::
 
-   virtualenv /path/to/env
-   source /path/to/env/bin/activate
-   pip install -e .
+        % virtualenv ~/venv
+        % source ~/venv/bin/activate
+        % pip install -e .
 
 
 Unit tests
