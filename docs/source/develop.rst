@@ -35,17 +35,18 @@ Tests may also be invoked directly with `pytest`_::
         % python -m pytest
 
 
-Codestyle
----------
-Codestyle is not strictly enforced.
+Code style
+----------
+
+Code style is not strictly enforced, but some general advice applies:
 
 * Write pretty code
-* Never use tab indents in python code
+* Never use tab indents in Python code
 * Follow PEPs to the best of your ability (`PEP-8`_, `PEP-257`_)
 * Docstrings should work with `sphinx`_
 
-Apply all the linters. The author recommends running ``flake8`` with plugins:
-``naming``, ``pycodestyle``, ``pyflakes``.
+Apply all the linters.  The author recommends running ``flake8`` with
+plugins: ``naming``, ``pycodestyle``, ``pyflakes``.
 
 
 Contribution guidelines
