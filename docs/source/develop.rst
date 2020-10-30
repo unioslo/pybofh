@@ -14,28 +14,25 @@ changes::
         % pip install -e .
 
 
-Unit tests
-----------
+Tests
+-----
 
-* Unit tests live under the ``tests/`` directory
-* Tests run using `pytest`_, typically invoked using `tox`_
+Unit tests live under the ``tests/`` directory and are written using the
+`pytest`_ testing framework.  The tests are typically invoked through
+`tox`_ to ensure compatibility with supported Python runtimes.
 
-::
+The following are all equal ways to run all the tests on all supported
+configurations, and presupposes that you have the necessary Python
+runtimes installed::
 
-   # Run tests using tox
-   tox
-   python -m tox
+        % ./setup.py test
+        % tox
+        % python -m tox
 
-   # Run tests using pytest
-   pytest
-   python -m pytest
+Tests may also be invoked directly with `pytest`_::
 
-   # Run tests using our custom setuptools command
-   python setup.py test
-
-
-Unit tests may be written as :py:mod:`unittest.TestCase` classes, but functional
-pytest tests are preferred.
+        % pytest
+        % python -m pytest
 
 
 Codestyle
