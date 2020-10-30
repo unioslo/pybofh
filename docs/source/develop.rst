@@ -49,8 +49,34 @@ Apply all the linters.  The author recommends running ``flake8`` with
 plugins: ``naming``, ``pycodestyle``, ``pyflakes``.
 
 
+Releasing
+---------
+
+To prepare a new release of bofh you should first ensure all tests are
+passing on all target Python runtimes::
+
+        % ./setup.py test
+
+After you have ensured there are no uncommitted changes in the repository,
+you can go ahead and tag the release with the desired version number.
+The package version number is derived from this tag, so pick it wisely::
+
+        % git tag -a vX.Y.Z
+
+First we publish the source code as so::
+
+        % git push
+        % git push --tags
+
+The final step is to release bofh to `PyPI`_::
+
+        % git checkout vX.Y.Z
+        % ./setup.py publish
+
+
 Contribution guidelines
 -----------------------
+
 TODO: Make a ``CONTRIBUTE.rst`` in the root, and include?
 
 
@@ -60,6 +86,7 @@ TODO: Make a ``CONTRIBUTE.rst`` in the root, and include?
 .. _pep-257: https://www.python.org/dev/peps/pep-0257/
 .. _pep-8: https://www.python.org/dev/peps/pep-0008/
 .. _pip: https://pip.pypa.io/en/stable/user_guide/
+.. _PyPI: https://pypi.org/project/bofh/
 .. _pytest: https://docs.pytest.org/
 .. _sphinx: http://www.sphinx-doc.org/
 .. _tox: https://tox.readthedocs.io/
