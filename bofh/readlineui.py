@@ -241,20 +241,18 @@ def prompter(prompt, mapping, help, default, argtype=None, optional=False):
             # if mapping, return the corresponding key,
             # else just return what the user typed.
             if map:
-                try:
-                    if val.isdigit():  # Single digit
+                if val.isdigit():  # Single digit
+                    try:
                         value = int(val)
-                        if value <= 0:
-                            return IndexError("Negative")
+                    except ValueError:  # e.g. in the command misc print_passwords
+                        print("Please type a number matching one of the items")
+                    if value <= 0:
+                        return IndexError("Negative")
+                    try:
                         return map[value - 1]
-                    else:
-                        return val  # Throw input to Cereberum, to handle range
-                except ValueError:  # e.g. in the command misc print_passwords
-                    print("Please type a number matching one of the items")
-                except IndexError:
-                    print("The item you selected does not exist")
-            else:
-                return val
+                    except IndexError:
+                        print("The item you selected does not exist")
+            return val  # Throw input to Cereberum, to handle range
 
 
 def repl(bofh, charset=None, prompt=None):
