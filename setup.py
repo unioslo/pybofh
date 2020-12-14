@@ -22,6 +22,8 @@
 from __future__ import print_function
 
 import codecs
+import errno
+import glob
 import io
 import os
 import shutil
@@ -29,6 +31,7 @@ import sys
 
 import setuptools
 from setuptools import Command
+from distutils.command.clean import clean as CleanCommand
 from setuptools.command.test import test as TestCommand
 
 
@@ -68,6 +71,21 @@ def get_textfile(filename):
 def get_packages():
     """ List of (sub)packages to install. """
     return setuptools.find_packages('.', include=('bofh', 'bofh.*'))
+
+
+class Clean(CleanCommand):
+    def run(self):
+        CleanCommand.run(self)
+        rm(".cache/")
+        rm(".eggs/")
+        rm(".pytest_cache/")
+        rm(".tox/")
+        rm("__pycache__/")
+        rm("*.egg-info/")
+        rm("dist/")
+        rm("docs/build/")
+        rm("junit-*.xml")
+        rm("**/*.pyc")
 
 
 class Publish(Command):
@@ -166,10 +184,24 @@ def main():
         ],
         keywords='cerebrum bofh xmlrpc client',
         cmdclass={
+            'clean': Clean,
             'test': Tox,
             'publish': Publish,
         },
     )
+
+
+def rm(pattern):
+    """Deletes files and directories using a glob pattern, not unlike rm(1)."""
+    for path in glob.glob(pattern):
+        try:
+            if os.path.isdir(path):
+                shutil.rmtree(path)
+            else:
+                os.remove(path)
+        except OSError as e:
+            if e.errno != errno.ENOENT:
+                raise
 
 
 def execl(path, *args):
