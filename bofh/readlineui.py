@@ -23,6 +23,7 @@ This module implements a REPL for implementing an interactive bofh client, and
 readline command completion.
 """
 from __future__ import print_function, unicode_literals
+import re
 
 import getpass
 import locale
@@ -217,8 +218,10 @@ def prompter(prompt, mapping, help, default, argtype=None, optional=False):
         # We remove them from the history.
         # Note that we only do this for non-empty lines! If we do it for all
         # lines, we would remove history that should not be removed ;)
-        if val:
-            rlh_to_delete = readline.get_current_history_length()
+        # Only delete if there are history items
+        history_length = readline.get_current_history_length()
+        if val and history_length > 0:
+            rlh_to_delete = history_length
             readline.remove_history_item(rlh_to_delete-1)
 
         # only let empty value pass if default or optional
@@ -239,17 +242,39 @@ def prompter(prompt, mapping, help, default, argtype=None, optional=False):
             # if mapping, return the corresponding key,
             # else just return what the user typed.
             if map:
-                try:
-                    i = int(val)
-                    if i < 1:
-                        raise IndexError("Negative")
-                    return map[i-1]
-                except ValueError:
-                    print("Please type a number matching one of the items")
-                except IndexError:
-                    print("The item you selected does not exist")
-            else:
-                return val
+                selections = None
+                if val.isdigit():  # Single digit
+                    try:
+                        i = int(val)
+                    except ValueError:
+                        print("Please type a number matching one of the items")
+                    if i <= 0:
+                        return IndexError("Negative")
+                    try:
+                        return map[i - 1]  # -1 because human input is off by +1
+                    except IndexError:
+                        print("The item you selected does not exist")
+                elif re.search(r"\d+-\d+", val):    # range
+                    values = val.split("-")
+                    try:
+                        start = int(values[0]) - 1
+                        end = int(values[1]) - 1
+                        selections = map[start:end]
+                    except ValueError:
+                        print("Please specify a range, eg. 1-3")
+                    except IndexError:
+                        print("The item you selected does not exist")
+                    return selections
+                elif re.search(r"(\d+,)+\d", val):  # comma separated
+                    values = [elem.strip() for elem in val.split(',')]
+                    try:
+                        selections = [map[int(elem) - 1] for elem in values]
+                    except ValueError:
+                        print("Please specify a list separated by commas, eg. 1,2,3")
+                    except IndexError:
+                        print("The item you selected does not exist")
+                    return selections
+            return val
 
 
 def repl(bofh, charset=None, prompt=None):
