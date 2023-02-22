@@ -1,2 +1,12 @@
-sphinx < 2  # sphinx 2 only supports py3
+# sphinx 2 only supports py3:
+sphinx < 2
+
+# Fix some agressive Jinja2 versioning issues.  Jinja2 and its internal deps
+# often does breaking chagnes in minor versions.  This should no longer be
+# needed if we completely drop support for older versions of Python, nad can
+# stay up-to-date with sphinx.
+Jinja2 ~= 2.3
+markupsafe < 2.1
+
+# Our preferred theme:
 sphinx-rtd-theme
