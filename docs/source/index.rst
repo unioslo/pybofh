@@ -1,7 +1,6 @@
-pybofh documentation
-====================
-
-*pybofh*, short for *brukerorganisering for hvermannsen*, is a `Cerebrum`_
+bofh documentation
+===================
+*bofh*, short for *brukerorganisering for hvermannsen*, is a `Cerebrum`_
 administration tool.
 
 It is an interactive XML/RPC CLI client for a ``Cerebrum.modules.bofhd``

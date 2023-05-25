@@ -18,21 +18,21 @@ bofh is implemented in Python and supports Python runtimes 2.7
 If you are on RHEL we recommend that you install the bofh RPM package
 from the university package repository:
 
-	# dnf install pybofh
+    # dnf install python3-bofh
 
 On other systems we recommend installing from the official Python package
 index (PyPI) into a [virtualenv]:
 
-	% virtualenv ~/venv
-	% source ~/venv/bin/activate
-	(venv) % pip install bofh
+    % virtualenv ~/venv
+    % source ~/venv/bin/activate
+    (venv) % pip install bofh
 
 
 Use
 ---
 
-	pybofh --help
-	python -m bofh --help
+    pybofh --help
+    python -m bofh --help
 
 
 Module usage
@@ -44,8 +44,7 @@ from getpass import getuser, getpass
 
 # Get a client by connecting to bofhd
 url = 'https://example.org:8000'
-cacert = '/path/to/ca.pem'
-client = bofh.connect(url=url, cert=cacert)
+client = bofh.connect(url=url)
 
 # You'll need to authenticate to access restricted commands
 client.login(getuser(), getpass())
@@ -70,17 +69,17 @@ You'll have to build the bofh documentation yourself (for now).
 Documentation is built using *sphinx*, and build requirements are
 specified in the [docs/requirements.txt] file.
 
-	% python setup.py build_sphinx -b html
-	% cd build/sphinx/html
-	% python3 -m http.server
+    % python setup.py build_sphinx -b html
+    % cd build/sphinx/html
+    % python3 -m http.server
 
 Then go to http://localhost:8000/.
 
-There is also also a troff man-page for the bofh script, which can be
+There is also also a troff man-page for the pybofh script, which can be
 built with:
 
-	% python setup.py build_sphinx -b man
-	% man ./build/sphinx/man/bofh.1
+    % python setup.py build_sphinx -b man
+    % man ./build/sphinx/man/pybofh.1
 
 For other documentation formats, see [docs/README.md] and [docs/Makefile].
 

@@ -1,11 +1,10 @@
 .. highlight:: bash
 
-Developing pybofh
-=================
+Developing bofh
+===============
 
 Environment
 -----------
-
 Install bofh into a `virtualenv`_ using `pip`_ to test your ongoing
 changes::
 
@@ -16,7 +15,6 @@ changes::
 
 Tests
 -----
-
 Unit tests live under the ``tests/`` directory and are written using the
 `pytest`_ testing framework.  The tests are typically invoked through
 `tox`_ to ensure compatibility with supported Python runtimes.
@@ -25,7 +23,7 @@ The following are all equal ways to run all the tests on all supported
 configurations, and presupposes that you have the necessary Python
 runtimes installed::
 
-        % ./setup.py test
+        % python setup.py test
         % tox
         % python -m tox
 
@@ -37,7 +35,6 @@ Tests may also be invoked directly with `pytest`_::
 
 Code style
 ----------
-
 Code style is not strictly enforced, but some general advice applies:
 
 * Write pretty code
@@ -51,32 +48,34 @@ plugins: ``naming``, ``pycodestyle``, ``pyflakes``.
 
 Releasing
 ---------
-
 To prepare a new release of bofh you should first ensure all tests are
-passing on all target Python runtimes::
+passing on all target Python runtimes:
+::
 
-        % ./setup.py test
+        % python setup.py test
 
 After you have ensured there are no uncommitted changes in the repository,
 you can go ahead and tag the release with the desired version number.
-The package version number is derived from this tag, so pick it wisely::
+The package version number is derived from this tag, so pick it wisely:
+::
 
         % git tag -a vX.Y.Z
 
-First we publish the source code as so::
+First we publish the source code as so:
+::
 
         % git push
         % git push --tags
 
-The final step is to release bofh to `PyPI`_::
+The final step is to release bofh to `PyPI`_
+::
 
         % git checkout vX.Y.Z
-        % ./setup.py publish
+        % python setup.py publish
 
 
 Contribution guidelines
 -----------------------
-
 TODO: Make a ``CONTRIBUTE.rst`` in the root, and include?
 
 

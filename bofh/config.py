@@ -1,23 +1,22 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright 2018 University of Oslo, Norway
+# This file is part of bofh.
+# Copyright (C) 2018-2023 University of Oslo, Norway
 #
-# This file is part of pybofh.
-#
-# pybofh is free software; you can redistribute it and/or modify it
-# under the terms of the GNU General Public License as published by
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# pybofh is distributed in the hope that it will be useful, but
-# WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-# General Public License for more details.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with pybofh; if not, see <https://www.gnu.org/licenses/>.
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-This module provides configuration and defaults for pybofh.
+This module provides configuration and defaults for bofh.
 
 Currently, all confguration here is related to loading configurable resources,
 and specifying defaults for items that are intended to be configurable in the
@@ -34,9 +33,9 @@ Files will be loaded from one of the following directories:
     3. <prefix>/local/share/pybofh
     4. <prefix>/share/pybofh
 
-The last location is where pybofh installs default configuration files and
+The last location is where bofh installs default configuration files and
 resources.  Currently, the only file loaded from these locations are the CA
-certificate bundle used by pybofh.
+certificate bundle used by bofh.
 
 
 Environment variables
@@ -85,10 +84,10 @@ DEFAULT_CONFIG_PATH = tuple((
     os.path.expanduser('~/.config/pybofh'),
     '/etc/pybofh',
     # python installs data/cacerts.pem to <prefix>/share/pybofh/
-    os.path.join(sys.prefix, 'local', 'share', 'pybofh'),
-    os.path.join(sys.prefix, 'share', 'pybofh'),
+    os.path.join(sys.prefix, 'local/share/pybofh'),
+    os.path.join(sys.prefix, 'share/pybofh'),
     # At last, look in ../data/ in case we're developing
-    os.path.join(os.path.dirname(__file__), '..', 'data'),
+    os.path.join(os.path.dirname(__file__), '../data'),
 ))
 
 # Default XMLRPC server url

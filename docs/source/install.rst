@@ -1,6 +1,5 @@
 Installing bofh
 ===============
-
 There are several ways to obtain bofh.  If you are an end-user and run
 RHEL or Fedora you likely want the RPM package.  If you’re an end-user
 on any other system you should consider installing the Python package
@@ -9,57 +8,58 @@ you may also install it directly from source.
 
 
 Install with pip
-----------------
-
-pybofh is available off the central Python package index `PyPI`_.
-It can be installed and upgraded this way::
+-----------------
+bofh is available off the central Python package index `PyPI`_.
+It can be installed and upgraded this way:
+::
 
     % pip install --upgrade bofh
 
-We also publish a source distribution in the *pypi-usit-int* repository
-at repo.usit.uio.no::
+We also publish a source distribution in the internal *int-pypi* repository
+at `<https://int-pypi.uio.no/>`_:
+::
 
    % pip install \
        --upgrade \
-       --extra-index-url https://repo.usit.uio.no/nexus/repository/pypi-usit-int/simple \
+       --extra-index-url https://int-pypi.uio.no/simple \
        bofh
-
-This source distribution may be extended or replaced with wheels or
-other binary distributions at some point.
 
 
 Install from RPM
 ----------------
-TODO: Make and publish RPM
-.. See https://bitbucket.usit.uio.no/users/fhl/repos/python-pybofh-spec/browse
+At the University of Oslo, bofh is available from `<https://rpm.uio.no>`_ as the
+``python3-bofh`` package:
+::
+
+   % dnf install python3-bofh
 
 
 Install from source
 -------------------
-
 You are encouraged to install bofh into a `virtualenv`_ to avoid package
-conflicts and other issues with your system’s Python environment::
+conflicts and other issues with your system’s Python environment:
+::
 
-   % virtualenv /path/to/my_pybofh_env
-   % source /path/to/my_pybofh_env/bin/activate
+   % virtualenv /path/to/bofh-env
+   % source /path/to/bofh-env/bin/activate
 
-Install pybofh by running the included ``setup.py`` script::
+Install bofh using ``pip``:
+::
 
-   % cd /path/to/pybofh_source
-   % python setup.py install
+   % /path/to/bofh-env/bin/pip install /path/to/bofh-source
 
-Use bofh either by activating the virtualenv environment::
+Use bofh either by activating the virtualenv environment:
+::
 
-   % source my_pybofh_env/bin/activate
-   % bofh --help
+   % source /path/to/bofh-env/bin/activate
+   % pybofh --help
 
 Or symlink the ``bofh`` script from your virtual environment to somewhere
-on your ``$PATH``::
+on your ``$PATH``:
+::
 
-   % cd /usr/local/bin/
-   % ln -s /path/to/my_pybofh_env/bin/bofh .
-   % which bofh
-   /usr/local/bin/bofh
+   % cd ~./local/bin
+   % ln -s /path/to/bofh-env/bin/pybofh
 
 
 .. _virtualenv: https://virtualenv.pypa.io/en/stable/

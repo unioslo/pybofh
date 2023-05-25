@@ -1,5 +1,5 @@
-pybofh
-======
+bofh
+=====
 
 For now, please see the ``README.md`` in the project root.
 
