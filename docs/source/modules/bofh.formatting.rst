@@ -4,8 +4,8 @@ bofh.formatting
 The formatting module consists of utilities for displaying responses from the
 XMLRPC server in a human readable form.
 
-Most notably is the parsing and formatting according to the hints (`format
-suggestions`_) given by the server.
+Most notably is the parsing and formatting according to the hints (format
+suggestions) given by the server.
 
 Not all commands will have format suggestions. An XMLRPC command will either:
 
