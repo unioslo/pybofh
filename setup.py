@@ -1,24 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-# Copyright 2010-2020 University of Oslo
 #
-# This file is part of pybofh.
+# This file is part of bofh.
+# Copyright (C) 2010-2023 University of Oslo, Norway
 #
-# PyBofh is free software; you can redistribute it and/or modify it
-# under the terms of the GNU General Public License as published by
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# PyBofh is distributed in the hope that it will be useful, but
-# WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-# General Public License for more details.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with PyBofh; if not, write to the Free Software Foundation,
-# Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
-
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import print_function
 
 import codecs
@@ -31,8 +28,8 @@ import sys
 
 import setuptools
 from setuptools import Command
-from distutils.command.clean import clean as CleanCommand
-from setuptools.command.test import test as TestCommand
+from distutils.command.clean import clean as clean_command
+from setuptools.command.test import test as test_command
 
 
 here = os.path.abspath(os.path.dirname(__file__))
@@ -73,9 +70,9 @@ def get_packages():
     return setuptools.find_packages('.', include=('bofh', 'bofh.*'))
 
 
-class Clean(CleanCommand):
+class Clean(clean_command):
     def run(self):
-        CleanCommand.run(self)
+        super(Clean, self).run()
         rm(".cache/")
         rm(".eggs/")
         rm(".pytest_cache/")
@@ -92,7 +89,8 @@ class Publish(Command):
     """Support publishing to PyPI via setup.py."""
 
     description = "Build and publish package."
-    user_options = [("repository=", None, "target package index (default: pypi)")]
+    user_options = [("repository=", None,
+                     "target package index (default: pypi)")]
 
     def initialize_options(self):
         self.repository = "pypi"
@@ -114,15 +112,15 @@ class Publish(Command):
         # TODO(andretol): consider git tagging here
 
 
-class Tox(TestCommand):
+class Tox(test_command):
     user_options = [('tox-args=', None, "Arguments to pass to tox")]
 
     def initialize_options(self):
-        TestCommand.initialize_options(self)
+        super(Tox, self).initialize_options()
         self.tox_args = ''
 
     def finalize_options(self):
-        TestCommand.finalize_options(self)
+        super(Tox, self).finalize_options()
         self.test_args = []
         self.test_suite = True
 

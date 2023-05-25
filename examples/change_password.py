@@ -1,52 +1,59 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-# Copyright 2010 University of Oslo, Norway
 #
-# This file is part of PyBofh.
+# This file is part of bofh.
+# Copyright (C) 2010-2023 University of Oslo, Norway
 #
-# PyBofh is free software; you can redistribute it and/or modify it
-# under the terms of the GNU General Public License as published by
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# PyBofh is distributed in the hope that it will be useful, but
-# WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-# General Public License for more details.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with PyBofh; if not, write to the Free Software Foundation,
-# Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
-
-import getpass, bofh.version, locale
-import bofh.proto
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from __future__ import (
+    absolute_import,
+    division,
+    print_function,
+    unicode_literals,
+)
+import getpass
 import sys
+import textwrap
 
-print (u"""This is PyBofh version %s
+import bofh.proto
+import bofh.version
 
-Copyright (c) 2010 University of Oslo, Norway
-This is free software; see the source for copying conditions. There is NO
-warranty, not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.""" 
-% bofh.version.version).encode(
-        locale.getpreferredencoding())
+header = textwrap.dedent(
+    """
+    This is bofh version {}
+
+    Copyright (C) 2010-2023 University of Oslo, Norway
+    This is free software; see the source for copying conditions. There is NO
+    warranty, not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+    """
+).strip().format(bofh.version.version)
+print(header)
 
 try:
     bofhcom = bofh.connect(getpass.getuser(), getpass.getpass())
-except bofh.proto.BofhError, e:
-    print e.args[0]
+except bofh.proto.BofhError as e:
+    print(e.args[0], file=sys.stderr)
     sys.exit(1)
 
-# print bofhcom.motd
+newpass = getpass.getpass("New password: ")
 
-newpass = getpass.getpass(u"New password: ")
-
-if newpass != getpass.getpass(u"Repeat: "):
-    print u"Passwords doesn't match"
+if newpass != getpass.getpass("Repeat: "):
+    print("Passwords doesn't match")
 else:
     try:
-        print bofhcom.user.password(getpass.getuser(), newpass)
-        print u"Password changed".encode(locale.getpreferredencoding())
-    except bofh.proto.BofhError, e:
-        print e.message
+        print(bofhcom.user.password(getpass.getuser(), newpass))
+        print("Password changed")
+    except bofh.proto.BofhError as e:
+        print(e.message, file=sys.stderr)
         sys.exit(1)

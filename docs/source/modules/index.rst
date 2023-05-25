@@ -7,7 +7,8 @@ TODO: Some of this should be moved to the documentation of a specific module.
 
 Usage
 -----
-
+A short example that connects to a bofh server, performs login, and runs the
+``user_info`` bofh command with argument ``foo``:
 ::
 
    import bofh
@@ -15,8 +16,7 @@ Usage
 
    # Get a client by connecting to bofhd
    url = 'https://example.org:8000'
-   cacert = '/path/to/ca.pem'
-   client = bofh.connect(url=url, cert=cacert)
+   client = bofh.connect(url=url)
 
    # You'll need to authenticate to access restricted commands
    client.login(getuser(), getpass())
@@ -31,7 +31,6 @@ Usage
 
 ``run_command`` vs ``<group>.<command>``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 The ``run_command`` command returns de-serialized, structured data, as returned by
 the XML-RPC server. This is probably what you want to use:
 
@@ -45,18 +44,16 @@ The generated ``<group>.<command>`` attributes calls
 ``run_command('<group>_<command>')``, and formats the structured output
 according to suggestions provided by the XML-RPC server. This is really only
 useful if you're building a REPL/interactive client:
-
 ::
 
-   >>> print client.group.list('foo')
+   >>> print(client.group.list('foo'))
    Type       Name       Expired
    account    foo        <not set>
 
 
 Errors
 ~~~~~~
-Any error from the XML-RPC server is raised as an exception in pybofh:
-
+Any error from the XML-RPC server is raised as an exception in bofh:
 ::
 
    >>> client.user.info('does_not_exist')
@@ -75,7 +72,6 @@ Any error from the XML-RPC server is raised as an exception in pybofh:
 
 Timeouts
 ~~~~~~~~
-
 The ``bofh.connect()`` method accepts a ``timeout`` argument. This can be used
 to abort from long-running command executions. This however, does not imply that
 the command is aborted on the server side, it will run until completion. If the
