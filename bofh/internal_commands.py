@@ -34,11 +34,17 @@ Implemented commands
 - script
 - source
 """
-from __future__ import absolute_import, unicode_literals, with_statement
-
+from __future__ import (
+    absolute_import,
+    division,
+    print_function,
+    unicode_literals,
+)
 import io
 import logging
 import os
+
+import six
 
 from bofh.readlineui import DEFAULT_PROMPT
 
@@ -198,5 +204,10 @@ def commands(bofh):
             cmd = getattr(grp, cmdname)
             fullname = cmd._fullname
             wide = max(wide, len(fullname))
-            ret.append([fullname, [grpname, cmdname] + map(unicode, cmd.args)])
-    return "\n".join(map(lambda x: "%-*s -> %s" % tuple([wide] + x), ret))
+            ret.append((
+                fullname,
+                [grpname, cmdname] + [six.text_type(a) for a in cmd.args],
+            ))
+    return "\n".join((
+        "%-*s -> %s" % ((wide,) + cmd) for cmd in ret
+     ))
