@@ -40,6 +40,9 @@ import bofh.metadata
 logger = logging.getLogger(__name__)
 dist_info = "{} {}".format(bofh.metadata.NAME, bofh.metadata.VERSION)
 
+# Conventional exit status for a program interrupted by SIGINT (128 + 2)
+EXIT_INTERRUPTED = 130
+
 
 def complete_url(url):
     """Add default protocol and port number to url if these were omitted
@@ -221,7 +224,10 @@ def main(inargs=None):
             print(conn.motd)
         conn.login(args.user,
                    prompt_pass('Password for {}:'.format(args.user)))
-    except (KeyboardInterrupt, EOFError):
+    except KeyboardInterrupt:
+        print("")
+        raise SystemExit(EXIT_INTERRUPTED)
+    except EOFError:
         print("")
         raise SystemExit()
     except bofh.proto.BofhError as e:
@@ -237,6 +243,9 @@ def main(inargs=None):
                 print(bofh_eval(conn, command, args.prompt))
         else:
             bofh.readlineui.repl(conn, prompt=args.prompt)
+    except KeyboardInterrupt:
+        print("")
+        raise SystemExit(EXIT_INTERRUPTED)
     except Exception as e:
         logger.error("Unhandled error", exc_info=True)
         raise SystemExit('Error: {}'.format(e))

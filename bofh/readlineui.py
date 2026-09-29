@@ -291,6 +291,9 @@ def repl(bofh, charset=None, prompt=None):
     :param charset: The charset for input, or None to find from system
     :param prompt: User defined prompt, if specified
     :raises: SystemExit
+
+    Ctrl+C aborts the current line or command, and Ctrl+D (EOF) on an empty
+    line exits the loop.
     """
     if not prompt:
         prompt = DEFAULT_PROMPT
@@ -311,13 +314,16 @@ def repl(bofh, charset=None, prompt=None):
             if not line:
                 continue
         except EOFError:
+            # Ctrl+D - exit
             logger.debug('EOFError on input()', exc_info=True)
+            print("")
             print("So long, and thanks for all the fish!")
             return
         except KeyboardInterrupt:
+            # Ctrl+C - discard the current line, and ask for a new command
             logger.debug('KeyboardInterrupt on input()', exc_info=True)
             print("")
-            raise SystemExit()
+            continue
         if script_file is not None:
             script_file.write("%s%s\n" % (prompt, line))
         try:
@@ -350,9 +356,11 @@ def repl(bofh, charset=None, prompt=None):
             logger.debug('protocol error on parse/eval', exc_info=True)
             # Error from the bofh server
             print(six.text_type(e.args[0]))
-        except EOFError:
-            # Sent from prompt func. Just ask for new command
-            logger.debug('EOFError on parse/eval', exc_info=True)
+        except (EOFError, KeyboardInterrupt):
+            # Ctrl+D or Ctrl+C in prompt func, or Ctrl+C while waiting for
+            # the server.  Abort the command, and ask for a new command.
+            logger.debug('EOFError/KeyboardInterrupt on parse/eval',
+                         exc_info=True)
             print()
         except parser.SynErr as e:
             logger.debug('syntax error on parse/eval', exc_info=True)
