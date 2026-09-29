@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # This file is part of bofh.
-# Copyright (C) 2018-2023 University of Oslo, Norway
+# Copyright (C) 2018-2026 University of Oslo, Norway
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,33 +24,24 @@ future.
 
 Configuration files and resources
 ---------------------------------
-Files will be loaded from one of the following directories:
+Config files will be loaded from one of the following directories:
 
-.. py:data:: DEFAULT_CONFIG_PATH
-
-    1. ~/.config/pybofh/
-    2. /etc/pybofh/
-    3. <prefix>/local/share/pybofh
-    4. <prefix>/share/pybofh
-
-The last location is where bofh installs default configuration files and
-resources.  Currently, the only file loaded from these locations are the CA
-certificate bundle used by bofh.
+ 1. ${XDG_CONFIG_HOME}/pybofh/
+ 2. ${XDG_CONFIG_DIRS}/pybofh/
+ 3. /etc/pybofh/
 
 
 Environment variables
 ---------------------
 
-.. py:data:: PYBOFH_DEFAULT_URL
+.. :data:: PYBOFH_DEFAULT_URL
 
 The default url to use if no '--url' option is given on the command line.
 
-.. py:data:: PYBOFH_DEFAULT_CAFILE
+.. :data:: PYBOFH_DEFAULT_CAFILE
 
-The default certificate to use if no --cert is given on the command line. If no
-default certificate is set using environment variable, the first available
-'cacerts.pem' file on the py:data:`DEFAULT_CONFIG_PATH` will be used by
-default.
+Allows setting a custom CA certificate chain.  If not set, bofh will use the
+default system certificates.
 
 
 Logging
@@ -61,41 +52,35 @@ filter level.
 When prompting for user input (verbosity, debug level), log levels can be
 translated according to a mapping:
 
-.. py:data:: LOGGING_VERBOSITY
+.. :data:: LOGGING_VERBOSITY
 
-    0. :py:const:`logging.ERROR`
-    1. :py:const:`logging.WARNING`
-    2. :py:const:`logging.INFO`
-    3. :py:const:`logging.DEBUG`
+    0. :const:`logging.ERROR`
+    1. :const:`logging.WARNING`
+    2. :const:`logging.INFO`
+    3. :const:`logging.DEBUG`
 """
 import logging
 import os
-import sys
 
 logger = logging.getLogger(__name__)
 
 
-# Config file locations
-# TODO: Consider using appdirs for windows support?
-# TODO: Replace default location with package_data for simplicity across
-#       platforms?
-DEFAULT_CONFIG_PATH = tuple((
-    # Read from standard locations?
-    os.path.expanduser('~/.config/pybofh'),
-    '/etc/pybofh',
-    # python installs data/cacerts.pem to <prefix>/share/pybofh/
-    os.path.join(sys.prefix, 'local/share/pybofh'),
-    os.path.join(sys.prefix, 'share/pybofh'),
-    # At last, look in ../data/ in case we're developing
-    os.path.join(os.path.dirname(__file__), '../data'),
-))
+CONFIG_SLUG = "pybofh"
+"""
+Subdirectory for bofh-related configs.
+
+Config files for bofh should be placed in:
+
+ 1. ~/.config/CONFIG_SLUG/
+ 2. /etc/xdg/CONFIG_SLUG/
+ 3. /etc/CONFIG_SLUG/
+"""
 
 # Default XMLRPC server url
-# TODO: Change this to https://localhost/ and put this url in a config.
+# TODO: Change this to https://localhost/ and put this url in a config?
 DEFAULT_URL = 'https://cerebrum-uio.uio.no:8000/'
 
 # Default logging format
-# TODO: Support logging config
 LOGGING_FORMAT = "%(levelname)s - %(name)s - %(message)s"
 
 # Verbosity count to logging level
@@ -107,23 +92,40 @@ LOGGING_VERBOSITY = tuple((
 ))
 
 
+def xdg_config_dirs():
+    """ XDG config lookup order. """
+    # TODO: Consider using appdirs for windows support?
+
+    # XDG_CONFIG_HOME
+    paths = [os.environ.get("XDG_CONFIG_HOME")
+             or os.path.expanduser("~/.config")]
+    # XDG_CONFIG_DIRS
+    paths.extend((os.environ.get("XDG_CONFIG_DIRS") or "/etc/xdg").split(":"))
+    # /etc
+    paths.append("/etc")
+
+    # iterate in order
+    seen = set()
+    for d in paths:
+        norm = os.path.abspath(os.path.join(d, CONFIG_SLUG))
+        if norm not in seen:
+            yield norm
+            seen.add(norm)
+
+
 def get_default_url():
-    return (
-        os.environ.get('PYBOFH_DEFAULT_URL') or
-        DEFAULT_URL)
+    return (os.environ.get('PYBOFH_DEFAULT_URL') or DEFAULT_URL)
 
 
 def get_default_cafile():
-    return (
-        os.environ.get('PYBOFH_DEFAULT_CAFILE') or
-        get_config_file('cacerts.pem'))
+    return os.environ.get('PYBOFH_DEFAULT_CAFILE')
 
 
 def get_verbosity(verbosity):
     """
     Translate verbosity to logging level.
 
-    Levels are traslated according to :py:const:`LOGGING_VERBOSITY`.
+    Levels are traslated according to :const:`LOGGING_VERBOSITY`.
 
     :param int verbosity: verbosity level
 
@@ -151,13 +153,13 @@ def iter_config_files(basename):
     :rtype: generator
     :return: returns matching files from :py:const:`DEFAULT_CONFIG_PATH`
     """
-    for path in DEFAULT_CONFIG_PATH:
-        logger.debug('looking for %r in %r', basename, os.path.abspath(path))
+    for path in xdg_config_dirs():
+        logger.debug('looking for %r in %r', basename, path)
         if not os.path.isdir(path):
             continue
         candidate = os.path.join(path, basename)
         if os.path.exists(candidate):
-            logger.info('found %r', candidate)
+            logger.debug('found %r', candidate)
             yield candidate
 
 
@@ -168,10 +170,10 @@ def get_config_file(basename):
     :param basename: filename (or relative path)
 
     :return:
-        returns the best (first) match from :py:func:`iter_config_files`, or
+        returns the best (first) match from :func:`iter_config_files`, or
         None if no file was found.
     """
     for filename in iter_config_files(basename):
         return filename
-    logger.warn('no %r found in config dirs', basename)
+    logger.debug('no %r found in config dirs', basename)
     return None

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # This file is part of bofh.
-# Copyright (C) 2010-2023 University of Oslo, Norway
+# Copyright (C) 2010-2026 University of Oslo, Norway
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -42,11 +42,11 @@ import ssl
 from six.moves.urllib.parse import urlparse
 
 from . import proto
-from . import version
+from . import metadata
 
 
 __all__ = ['connect']
-__version__ = version.version
+__version__ = metadata.VERSION
 
 logger = logging.getLogger(__name__)
 

@@ -6,31 +6,23 @@ Developing bofh
 Environment
 -----------
 Install bofh into a `virtualenv`_ using `pip`_ to test your ongoing
-changes::
+changes:
+::
 
-        % virtualenv ~/venv
-        % source ~/venv/bin/activate
-        % pip install -e .
+    % virtualenv ~/venv
+    % source ~/venv/bin/activate
+    % pip install -e .[dev]
 
 
 Tests
 -----
 Unit tests live under the ``tests/`` directory and are written using the
-`pytest`_ testing framework.  The tests are typically invoked through
-`tox`_ to ensure compatibility with supported Python runtimes.
+`pytest`_ testing framework.
 
-The following are all equal ways to run all the tests on all supported
-configurations, and presupposes that you have the necessary Python
-runtimes installed::
+Tests may also be invoked directly with `pytest`_:
+::
 
-        % python setup.py test
-        % tox
-        % python -m tox
-
-Tests may also be invoked directly with `pytest`_::
-
-        % pytest
-        % python -m pytest
+    % python -m pytest
 
 
 Code style
@@ -49,29 +41,47 @@ plugins: ``naming``, ``pycodestyle``, ``pyflakes``.
 Releasing
 ---------
 To prepare a new release of bofh you should first ensure all tests are
-passing on all target Python runtimes:
+passing:
 ::
 
-        % python setup.py test
+    % python -m pytest
 
-After you have ensured there are no uncommitted changes in the repository,
-you can go ahead and tag the release with the desired version number.
-The package version number is derived from this tag, so pick it wisely:
+Before releasing any changes, the version number needs to be updated.  Please
+pick a good, new version according to *semantic versioning* principles:
 ::
 
-        % git tag -a vX.Y.Z
+    % # bump patch version (i.e. 1.5.0 to 1.5.1), commit, and tag
+    % bumpversion patch  # or minor, or major
 
-First we publish the source code as so:
+If you're unsure, do some dry-runs and testing:
 ::
 
-        % git push
-        % git push --tags
+    % # Only show what changes *would* be done:
+    % bumpversion minor --dry-run --verbose
 
-The final step is to release bofh to `PyPI`_
+    % # Only do changes in the working tree - no git interactions
+    % bumpversion minor --no-commit --no-tags
+
+
+This will:
+
+ 1. Write a new version number to the ``bofh.metadata`` module
+ 2. Update bumpversion metadata in ``setup.cfg``
+ 3. Commit these changes to the repository
+ 4. Tag this commit with a new version tag
+
+Then we publish the source code:
 ::
 
-        % git checkout vX.Y.Z
-        % python setup.py publish
+    % git push
+    % git push --tags
+
+And upload the package to `PyPI`_:
+::
+
+    % git checkout vX.Y.Z
+    % python -m build
+    % python -m twine upload … dist/*
 
 
 Contribution guidelines
@@ -88,5 +98,4 @@ TODO: Make a ``CONTRIBUTE.rst`` in the root, and include?
 .. _PyPI: https://pypi.org/project/bofh/
 .. _pytest: https://docs.pytest.org/
 .. _sphinx: http://www.sphinx-doc.org/
-.. _tox: https://tox.readthedocs.io/
 .. _virtualenv: https://virtualenv.pypa.io/

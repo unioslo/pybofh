@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # This file is part of bofh.
-# Copyright (C) 2010-2023 University of Oslo, Norway
+# Copyright (C) 2010-2026 University of Oslo, Norway
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@ from six.moves import xmlrpc_client as _xmlrpc
 from six.moves.urllib.parse import urlparse
 
 from . import https
-from . import version
+from . import metadata
 from .formatting import get_formatter
 
 
@@ -485,7 +485,7 @@ class Bofh(object):
     # get_default_param(session, command, args)
     # get_format_suggestion(command)
 
-    def get_motd(self, client="PyBofh", version=version.version):
+    def get_motd(self, client="PyBofh", version=metadata.VERSION):
         """Get (and cache) message of the day from server"""
         self._motd = wash_response(self._connection.get_motd(client, version))
         return self._motd
