@@ -288,6 +288,7 @@ def _parse_bofh_command(bofh, fullgrp, group, start, lex, line):
     if solematch:
         cmd_obj = getattr(grp, solematch)
         ret.set_command(cmd_obj)
+        incomplete = None
         for expected in cmd_obj.args:
             try:
                 arg, idx = parse_string_or_list(lex)
@@ -298,15 +299,24 @@ def _parse_bofh_command(bofh, fullgrp, group, start, lex, line):
                     ret.append(arg, idx, ArgCompleter(expected))
                 # TODO/TBD: use e.completions?
                 ret.append("", -1, ArgCompleter(expected))
+                # An argument with an unclosed quote, list or a trailing
+                # backslash, rather than a missing argument (which is
+                # prompted for).
+                if (e.parse or e.completions) and incomplete is None:
+                    incomplete = e
         try:
             while True:
                 arg, idx = parse_string_or_list(lex)
                 ret.append(arg, idx, [])
         except IncompleteParse as e:
             if e.parse:
-                arg, idx = parse_string_or_list(lex)
-                ret.append(arg, idx, ArgCompleter(expected))
+                # an incomplete extra argument, e.g. an unclosed quote
+                arg, idx = e.parse
+                ret.append(arg, idx, [])
                 raise IncompleteParse(e.args[0], ret, e.completions)
+        if incomplete is not None:
+            raise IncompleteParse(incomplete.args[0], ret,
+                                  incomplete.completions)
     return ret
 
 
@@ -652,7 +662,7 @@ def parse_string_or_list(lex):
         else:  # val1, idx1 holds the last token
             raise IncompleteParse(
                 "Expected %s, got nothing" %
-                ("something" if val == "\\" else ')'),
+                ("something" if val == "\\" else '"'),
                 (val1, idx1), [' ' if val == '\\' else '"'])
     elif val == '(':
         try:
