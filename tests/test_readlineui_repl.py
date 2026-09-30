@@ -106,3 +106,28 @@ def test_quit_command_exits(bofh, scripted_input, commands):
     with pytest.raises(SystemExit) as exc_info:
         readlineui.repl(bofh)
     assert exc_info.value.code == 0
+
+
+@pytest.fixture
+def shown_prompts(monkeypatch):
+    """ record the prompt strings actually given to input(), then EOF. """
+    prompts = []
+
+    def raw_input(prompt):
+        if isinstance(prompt, bytes):
+            prompt = prompt.decode('utf-8')
+        prompts.append(prompt)
+        raise EOFError()
+
+    monkeypatch.setattr(readlineui, '_raw_input', raw_input)
+    return prompts
+
+
+def test_default_prompt(bofh, shown_prompts):
+    readlineui.repl(bofh, charset='utf-8')
+    assert shown_prompts == ["bofh> "]
+
+
+def test_custom_prompt(bofh, shown_prompts):
+    readlineui.repl(bofh, charset='utf-8', prompt="foo: ")
+    assert shown_prompts == ["foo: "]

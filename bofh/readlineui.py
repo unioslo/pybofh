@@ -36,7 +36,7 @@ from . import parser, proto
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_PROMPT = "bofh>>> "
+DEFAULT_PROMPT = "bofh> "
 
 
 class IOUtil(object):
