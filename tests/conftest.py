@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 
 import pytest
 
+from bofh import proto
 from bofh import readlineui
 from bofh.proto import Bofh
 
@@ -112,3 +113,50 @@ def scripted_input(monkeypatch):
         monkeypatch.setattr(readlineui.IOUtil, 'get_secret', get_input)
         return feeder
     return install
+
+
+class FakeBofhdConnection(object):
+    """
+    A fake bofhd XMLRPC connection, with a few commands.
+
+    run_command() returns a text describing the call, and, like bofhd, runs
+    the command once for each item in a list argument.  Set `error` to make
+    it raise an exception instead.
+    """
+
+    commands = {
+        'misc_error': [['misc', 'error'], []],
+        'misc_echo': [['misc', 'echo'], [{'prompt': "Text"}]],
+        'user_info': [['user', 'info'], [{'prompt': "Username"}]],
+    }
+
+    def __init__(self):
+        self.error = None
+        self.run_command_calls = []
+
+    def get_commands(self, session):
+        return self.commands
+
+    def get_format_suggestion(self, command):
+        return ''
+
+    def run_command(self, session, command, *args):
+        self.run_command_calls.append((command,) + args)
+        if self.error is not None:
+            raise self.error
+        for n, arg in enumerate(args):
+            if isinstance(arg, list):
+                return ['%s %s' % (command, ' '.join(
+                    args[:n] + (item,) + args[n + 1:])) for item in arg]
+        return '%s %s' % (command, ' '.join(args))
+
+
+@pytest.fixture
+def commands_bofh():
+    """ a bofh.proto.Bofh object with a FakeBofhdConnection. """
+    bofh = proto.Bofh.__new__(proto.Bofh)
+    bofh._groups = dict()
+    bofh._connection = FakeBofhdConnection()
+    bofh._session = 'session'
+    bofh._init_commands()
+    return bofh

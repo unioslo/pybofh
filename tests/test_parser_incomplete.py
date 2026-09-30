@@ -13,28 +13,12 @@ import readline
 import pytest
 
 from bofh import parser
-from bofh import proto
 from bofh import readlineui
 
 
-class FakeConnection(object):
-    def get_commands(self, session):
-        return {
-            'misc_error': [['misc', 'error'], []],
-            'misc_echo': [['misc', 'echo'], [{'prompt': "Text"}]],
-            'user_info': [['user', 'info'], [{'prompt': "Username"}]],
-        }
-
-
 @pytest.fixture
-def conn():
-    """ a Bofh object with the commands from FakeConnection. """
-    bofh = proto.Bofh.__new__(proto.Bofh)
-    bofh._groups = dict()
-    bofh._connection = FakeConnection()
-    bofh._session = 'session'
-    bofh._init_commands()
-    return bofh
+def conn(commands_bofh):
+    return commands_bofh
 
 
 def get_args(parse):

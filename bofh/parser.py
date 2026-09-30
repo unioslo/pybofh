@@ -167,17 +167,14 @@ class BofhCommand(Command):
 
         :param prompter: Callable to get single input item
         """
+        # The command is only set if the parser recognised it
+        command = getattr(self, 'command', None)
+        if command is None:
+            raise NoGroup(None, ())
         # Prepare arguments -- the first two elements in self.args is the
         # command group and the command name
         args = tuple(_prepare_args(self.args[2:]))
-        try:
-            return self.command(prompter=prompter, *args)
-        except AttributeError:
-            logger.debug("unable to run %r, command=%r, args=%r",
-                         self.line, getattr(self, 'command', None), args,
-                         exc_info=True)
-            # TODO: This is probably the wrong exception to re-raise
-            raise NoGroup(None, args)
+        return command(prompter=prompter, *args)
 
 
 class InternalCommand(Command):
