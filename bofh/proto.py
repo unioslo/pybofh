@@ -546,7 +546,9 @@ class Bofh(object):
     @property
     def motd(self):
         """Get (cached) message of the day from bofh server"""
-        return getattr(self, '_motd', self.get_motd())
+        if not hasattr(self, '_motd'):
+            self.get_motd()
+        return self._motd
 
     def _init_commands(self, reset=False):
         """
