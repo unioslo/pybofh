@@ -252,16 +252,14 @@ def prompter(prompt, mapping, help, default, argtype=None, optional=False,
         if map:
             print(mapstr)
         # get input from user
+        history_length = readline.get_current_history_length()
         val = inputfunc(_prompt).strip()
         # Lines read at this stage, are params to a command.
-        # We remove them from the history.
-        # Note that we only do this for non-empty lines! If we do it for all
-        # lines, we would remove history that should not be removed ;)
-        # Only delete if there are history items
-        history_length = readline.get_current_history_length()
-        if val and history_length > 0:
-            rlh_to_delete = history_length
-            readline.remove_history_item(rlh_to_delete-1)
+        # We remove them from the history, but only if the input function
+        # added them.  getpass() never does, and input() skips empty lines
+        # and lines identical to the previous one.
+        if readline.get_current_history_length() > history_length:
+            readline.remove_history_item(history_length)
 
         # only let empty value pass if default or optional
         if not val and not default:
