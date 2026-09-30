@@ -67,25 +67,23 @@ Documentation
 You'll have to build the bofh documentation yourself (for now).
 
 Documentation is built using *sphinx*, and build requirements are
-specified in the [docs/requirements.txt] file.
+specified in the *doc* extras:
 
-    % python setup.py build_sphinx -b html
-    % cd build/sphinx/html
-    % python3 -m http.server
+    % pip install .[doc]
+    % cd docs/
+    % make html
+    % python3 -m http.server -d build/html/
 
-Then go to http://localhost:8000/.
+Then go to <http://localhost:8000/>.
 
 There is also also a troff man-page for the pybofh script, which can be
 built with:
 
-    % python setup.py build_sphinx -b man
-    % man ./build/sphinx/man/pybofh.1
-
-For other documentation formats, see [docs/README.md] and [docs/Makefile].
+    % make man
+    % man ./build/man/pybofh.1
 
 
 [Cerebrum]: https://github.com/unioslo/cerebrum
 [docs/Makefile]: https://github.com/unioslo/pybofh/blob/master/docs/Makefile
 [docs/README.md]: https://github.com/unioslo/pybofh/blob/master/docs/README.md
-[docs/requirements.txt]: https://github.com/unioslo/pybofh/blob/master/requirements.txt
 [virtualenv]: https://virtualenv.pypa.io/

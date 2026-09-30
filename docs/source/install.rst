@@ -35,7 +35,7 @@ At the University of Oslo, bofh is available from `<https://rpm.uio.no>`_ as the
 
 
 Install from source
--------------------
+--------------------
 You are encouraged to install bofh into a `virtualenv`_ to avoid package
 conflicts and other issues with your system’s Python environment:
 ::
@@ -58,7 +58,7 @@ Or symlink the ``bofh`` script from your virtual environment to somewhere
 on your ``$PATH``:
 ::
 
-   % cd ~./local/bin
+   % cd ~/.local/bin
    % ln -s /path/to/bofh-env/bin/pybofh
 
 

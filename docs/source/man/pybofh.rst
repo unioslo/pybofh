@@ -57,9 +57,8 @@ Connection Options
    will be used to validate the server certificate.  Any CA-certificates or
    revocation lists in the default system CA-path will still be used.
 
-   The default value is a self-signed certificate included with pybofh.  This
-   default can be changed by adding a custom ``~/.config/pybofh/cacerts.pem`` or
-   by setting the environment variable ``PYBOFH_DEFAULT_CAFILE``.
+   A default value can be set by the environment variable
+   ``PYBOFH_DEFAULT_CAFILE``.
 
 .. option:: --insecure
 

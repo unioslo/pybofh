@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # This file is part of bofh.
-# Copyright (C) 2010-2023 University of Oslo, Norway
+# Copyright (C) 2010-2026 University of Oslo, Norway
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -34,11 +34,11 @@ import bofh.config
 import bofh.parser
 import bofh.proto
 import bofh.readlineui
-import bofh.version
+import bofh.metadata
 
 
 logger = logging.getLogger(__name__)
-dist_info = bofh.version.get_distribution()
+dist_info = "{} {}".format(bofh.metadata.NAME, bofh.metadata.VERSION)
 
 
 def complete_url(url):
@@ -140,10 +140,14 @@ def main(inargs=None):
         help="authenticate as %(metavar)s (default: %(default)s)",
         metavar='USER',
     )
+    _default_ca = bofh.config.get_default_cafile()
     connect_args.add_argument(
         '-c', '--cert',
-        default=bofh.config.get_default_cafile(),
-        help="use ca certificates from %(metavar)s (default: %(default)s)",
+        default=_default_ca,
+        help=(
+            "use ca certificates from %(metavar)s"
+            + (" (default: %(default)s)" if _default_ca else "")
+        ),
         metavar='PEM',
     )
     connect_args.add_argument(
