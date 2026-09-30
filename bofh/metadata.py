@@ -18,4 +18,4 @@
 """ bofh package metadata. """
 
 NAME = "bofh"
-VERSION = "0.9.8"
+VERSION = "0.10.0"
