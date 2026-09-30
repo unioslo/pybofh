@@ -1,2 +1,5 @@
+graft tests
+graft docs
+prune docs/build
 recursive-include bofh *.txt *.md
-recursive-include docs Makefile conf.py *.txt *.md *.rst
+global-exclude *.py[cod]
