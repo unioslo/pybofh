@@ -103,6 +103,21 @@ def bofh_eval(conn, line, prompt):
     return result
 
 
+def logout(conn):
+    """
+    Log out on exit.
+
+    Errors are ignored, as we're exiting anyway, and should not replace the
+    exit status (e.g. when the server can't be reached).  An abandoned session
+    will expire on the server.
+    """
+    try:
+        conn.logout()
+    except (Exception, KeyboardInterrupt) as e:
+        logger.warning("Unable to log out: %r", e)
+        logger.debug("Unable to log out", exc_info=True)
+
+
 class UnicodeType(object):
     """ Argparse transform for non-unicode input. """
 
@@ -250,7 +265,7 @@ def main(inargs=None):
         logger.error("Unhandled error", exc_info=True)
         raise SystemExit('Error: {}'.format(e))
     finally:
-        conn.logout()
+        logout(conn)
 
 
 if __name__ == '__main__':

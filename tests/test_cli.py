@@ -18,11 +18,14 @@ class FakeConnection(object):
     def __init__(self):
         self.logged_in = False
         self.logged_out = False
+        self.logout_error = None
 
     def login(self, user, password):
         self.logged_in = True
 
     def logout(self):
+        if self.logout_error:
+            raise self.logout_error
         self.logged_out = True
 
 
@@ -41,9 +44,10 @@ def set_password_input(monkeypatch, exc=None):
     monkeypatch.setattr(bofh.readlineui.IOUtil, 'get_secret', get_secret)
 
 
-def set_repl(monkeypatch, exc):
+def set_repl(monkeypatch, exc=None):
     def repl(*args, **kwargs):
-        raise exc
+        if exc:
+            raise exc
     monkeypatch.setattr(bofh.readlineui, 'repl', repl)
 
 
@@ -93,3 +97,49 @@ def test_interrupt_in_cmd_exits(monkeypatch, conn):
         bofh.cli.main(ARGS + ['--cmd', 'foo'])
     assert exc_info.value.code == 130
     assert conn.logged_out
+
+
+# How a session can end, and how main() should exit (None: return normally)
+ENDINGS = {
+    'eof': (None, None),
+    'quit': (SystemExit(0), 0),
+    'interrupt': (KeyboardInterrupt, 130),
+    'error': (RuntimeError('boom'), 'Error: boom'),
+}
+
+
+def run_main():
+    """ run main(), and return how it exited. """
+    try:
+        bofh.cli.main(ARGS)
+    except SystemExit as e:
+        return ('exit', e.code)
+    except BaseException as e:
+        return ('raised', type(e))
+    return ('returned', None)
+
+
+@pytest.mark.parametrize('ending', sorted(ENDINGS))
+def test_logout_on_exit(monkeypatch, conn, ending):
+    exc, code = ENDINGS[ending]
+    set_password_input(monkeypatch)
+    set_repl(monkeypatch, exc)
+    expected = ('returned', None) if ending == 'eof' else ('exit', code)
+    assert run_main() == expected
+    assert conn.logged_out
+
+
+@pytest.mark.parametrize('logout_error', [
+    OSError(113, 'No route to host'),
+    bofh.proto.BofhError('Session expired'),
+    KeyboardInterrupt(),
+])
+@pytest.mark.parametrize('ending', sorted(ENDINGS))
+def test_logout_error_on_exit(monkeypatch, conn, ending, logout_error):
+    # e.g. the server can't be reached - exit as if logout succeeded
+    exc, code = ENDINGS[ending]
+    set_password_input(monkeypatch)
+    set_repl(monkeypatch, exc)
+    conn.logout_error = logout_error
+    expected = ('returned', None) if ending == 'eof' else ('exit', code)
+    assert run_main() == expected
