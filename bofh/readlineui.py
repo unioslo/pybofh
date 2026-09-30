@@ -293,6 +293,20 @@ def prompter(prompt, mapping, help, default, argtype=None, optional=False,
             return val
 
 
+def _uses_libedit():
+    """
+    Check if the readline module uses libedit (editline) rather than GNU
+    readline.
+
+    This is the case for e.g. python-build-standalone builds (used by uv and
+    mise) and Python on macOS.  libedit needs its own syntax for key bindings.
+    """
+    backend = getattr(readline, 'backend', None)  # Python 3.13+
+    if backend is not None:
+        return backend == 'editline'
+    return 'libedit' in (readline.__doc__ or '')
+
+
 def repl(bofh, charset=None, prompt=None):
     """
     Read Eval Print Loop
@@ -320,7 +334,10 @@ def repl(bofh, charset=None, prompt=None):
 
     ioutil = IOUtil(default_prompt=prompt, encoding=charset)
 
-    readline.parse_and_bind("tab: complete")
+    if _uses_libedit():
+        readline.parse_and_bind("bind ^I rl_complete")
+    else:
+        readline.parse_and_bind("tab: complete")
     readline.set_completer(BofhCompleter(bofh, charset))
     while True:
         # read input
