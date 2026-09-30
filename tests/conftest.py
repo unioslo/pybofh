@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 
 import pytest
 
+from bofh import readlineui
 from bofh.proto import Bofh
 
 
@@ -68,3 +69,46 @@ def bofh(url):
     the functions that needs it should be refactored.
     """
     return MockBofh(url, None)
+
+
+class ScriptedInput(object):
+    """
+    Replacement for IOUtil.get_input/get_secret.
+
+    Returns each item in turn, or raises it if it is an exception.  Raises
+    AssertionError if the input is exhausted, so that a test can't loop
+    forever.
+    """
+
+    def __init__(self, *items):
+        self.items = list(items)
+        self.prompts = []
+
+    def __call__(self, prompt=None):
+        self.prompts.append(prompt)
+        if not self.items:
+            raise AssertionError("asked for more input than expected")
+        item = self.items.pop(0)
+        if isinstance(item, BaseException) or (
+                isinstance(item, type) and issubclass(item, BaseException)):
+            raise item
+        return item
+
+
+@pytest.fixture
+def scripted_input(monkeypatch):
+    """
+    Replace user input with the given items.
+
+    See :class:`ScriptedInput`.
+    """
+    def install(*items):
+        feeder = ScriptedInput(*items)
+
+        def get_input(ioutil, prompt=None):
+            return feeder(prompt)
+
+        monkeypatch.setattr(readlineui.IOUtil, 'get_input', get_input)
+        monkeypatch.setattr(readlineui.IOUtil, 'get_secret', get_input)
+        return feeder
+    return install

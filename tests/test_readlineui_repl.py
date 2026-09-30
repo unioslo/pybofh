@@ -10,30 +10,6 @@ import pytest
 from bofh import readlineui
 
 
-class ScriptedInput(object):
-    """
-    Replacement for IOUtil.get_input/get_secret.
-
-    Returns each item in turn, or raises it if it is an exception.  Raises
-    AssertionError if the input is exhausted, so that a test can't loop
-    forever.
-    """
-
-    def __init__(self, *items):
-        self.items = list(items)
-        self.prompts = []
-
-    def __call__(self, prompt=None):
-        self.prompts.append(prompt)
-        if not self.items:
-            raise AssertionError("repl asked for more input than expected")
-        item = self.items.pop(0)
-        if isinstance(item, BaseException) or (
-                isinstance(item, type) and issubclass(item, BaseException)):
-            raise item
-        return item
-
-
 class FakeParse(object):
     """ A parse result whose eval() runs a given callable. """
 
@@ -42,20 +18,6 @@ class FakeParse(object):
 
     def eval(self, prompter=None, prompt=None):
         return self.func(prompter)
-
-
-@pytest.fixture
-def scripted_input(monkeypatch):
-    def install(*items):
-        feeder = ScriptedInput(*items)
-
-        def get_input(ioutil, prompt=None):
-            return feeder(prompt)
-
-        monkeypatch.setattr(readlineui.IOUtil, 'get_input', get_input)
-        monkeypatch.setattr(readlineui.IOUtil, 'get_secret', get_input)
-        return feeder
-    return install
 
 
 @pytest.fixture
