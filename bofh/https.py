@@ -57,6 +57,17 @@ class _XmlRpcTimeoutMixin(_xmlrpc.Transport, object):
         self._connection = host, conn
         return conn
 
+    def single_request(self, *args, **kwargs):
+        try:
+            return super(_XmlRpcTimeoutMixin, self).single_request(*args,
+                                                                   **kwargs)
+        except KeyboardInterrupt:
+            # Transport.single_request only resets the connection on
+            # Exception.  An interrupted request leaves the connection in an
+            # unusable state, so we need to reset it here as well.
+            self.close()
+            raise
+
 
 class Transport(_XmlRpcTimeoutMixin):
     """

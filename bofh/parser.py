@@ -167,17 +167,14 @@ class BofhCommand(Command):
 
         :param prompter: Callable to get single input item
         """
+        # The command is only set if the parser recognised it
+        command = getattr(self, 'command', None)
+        if command is None:
+            raise NoGroup(None, ())
         # Prepare arguments -- the first two elements in self.args is the
         # command group and the command name
         args = tuple(_prepare_args(self.args[2:]))
-        try:
-            return self.command(prompter=prompter, *args)
-        except AttributeError:
-            logger.debug("unable to run %r, command=%r, args=%r",
-                         self.line, getattr(self, 'command', None), args,
-                         exc_info=True)
-            # TODO: This is probably the wrong exception to re-raise
-            raise NoGroup(None, args)
+        return command(prompter=prompter, *args)
 
 
 class InternalCommand(Command):
@@ -288,6 +285,7 @@ def _parse_bofh_command(bofh, fullgrp, group, start, lex, line):
     if solematch:
         cmd_obj = getattr(grp, solematch)
         ret.set_command(cmd_obj)
+        incomplete = None
         for expected in cmd_obj.args:
             try:
                 arg, idx = parse_string_or_list(lex)
@@ -298,15 +296,24 @@ def _parse_bofh_command(bofh, fullgrp, group, start, lex, line):
                     ret.append(arg, idx, ArgCompleter(expected))
                 # TODO/TBD: use e.completions?
                 ret.append("", -1, ArgCompleter(expected))
+                # An argument with an unclosed quote, list or a trailing
+                # backslash, rather than a missing argument (which is
+                # prompted for).
+                if (e.parse or e.completions) and incomplete is None:
+                    incomplete = e
         try:
             while True:
                 arg, idx = parse_string_or_list(lex)
                 ret.append(arg, idx, [])
         except IncompleteParse as e:
             if e.parse:
-                arg, idx = parse_string_or_list(lex)
-                ret.append(arg, idx, ArgCompleter(expected))
+                # an incomplete extra argument, e.g. an unclosed quote
+                arg, idx = e.parse
+                ret.append(arg, idx, [])
                 raise IncompleteParse(e.args[0], ret, e.completions)
+        if incomplete is not None:
+            raise IncompleteParse(incomplete.args[0], ret,
+                                  incomplete.completions)
     return ret
 
 
@@ -652,7 +659,7 @@ def parse_string_or_list(lex):
         else:  # val1, idx1 holds the last token
             raise IncompleteParse(
                 "Expected %s, got nothing" %
-                ("something" if val == "\\" else ')'),
+                ("something" if val == "\\" else '"'),
                 (val1, idx1), [' ' if val == '\\' else '"'])
     elif val == '(':
         try:

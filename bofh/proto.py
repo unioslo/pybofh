@@ -290,11 +290,16 @@ class _Command(object):
         hlp = result.get('help_ref')
         if hlp:
             hlp = self._bofh.arg_help(hlp)
+        # With 'raw', the map is only shown to the user, and the server parses
+        # the answer itself (e.g. a selection like "1-3,5").  Only passed on
+        # when set, as prompt_func may be a callable that doesn't support it.
+        kwargs = {'raw': True} if result.get('raw') else {}
         while ans == "":
             ans = prompt_func(result.get('prompt'),
                               newmap,
                               hlp,
-                              result.get('default'))
+                              result.get('default'),
+                              **kwargs)
         # Yes, I have done some functional programming lately
         # It's another way of creating a loop
         if result.get('last_arg'):
@@ -541,7 +546,9 @@ class Bofh(object):
     @property
     def motd(self):
         """Get (cached) message of the day from bofh server"""
-        return getattr(self, '_motd', self.get_motd())
+        if not hasattr(self, '_motd'):
+            self.get_motd()
+        return self._motd
 
     def _init_commands(self, reset=False):
         """

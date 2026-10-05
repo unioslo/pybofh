@@ -36,7 +36,7 @@ from . import parser, proto
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_PROMPT = "bofh>>> "
+DEFAULT_PROMPT = "bofh> "
 
 
 class IOUtil(object):
@@ -159,7 +159,44 @@ class BofhCompleter(object):
 script_file = None
 
 
-def prompter(prompt, mapping, help, default, argtype=None, optional=False):
+def _parse_selection(text, count):
+    """
+    Parse a selection from a numbered list.
+
+    :param text: User input, e.g. "2", "1-3" or "1,3"
+    :param count: Number of items in the list, numbered from 1
+
+    :returns:
+        An item number for a single number, a list of item numbers for a
+        range or a comma separated list, or None if the text is not a
+        selection.
+
+    :raises ValueError: If the selection doesn't match the list.
+    """
+    def check(number):
+        number = int(number)
+        if not 1 <= number <= count:
+            raise ValueError("The item you selected does not exist")
+        return number
+
+    if re.match(r"[0-9]+$", text):
+        return check(text)
+
+    match = re.match(r"([0-9]+)\s*-\s*([0-9]+)$", text)
+    if match:
+        start, end = (check(n) for n in match.groups())
+        if start > end:
+            raise ValueError("Please specify a range, eg. 1-3")
+        return list(range(start, end + 1))
+
+    if re.match(r"[0-9]+(\s*,\s*[0-9]+)+$", text):
+        return [check(n) for n in text.split(",")]
+
+    return None
+
+
+def prompter(prompt, mapping, help, default, argtype=None, optional=False,
+             raw=False):
     """
     A promter function.
 
@@ -181,10 +218,13 @@ def prompter(prompt, mapping, help, default, argtype=None, optional=False):
                     is recognized. (Does not echo).
     :type argtype: unicode
     :optional: True if this arg is optional
+    :param raw: True if the mapping should only be shown to the user, and the
+                answer returned as typed (e.g. a selection like "1-3,5").
     """
     logger.debug('prompter(prompt=%s, mapping=%s, help=%s, default=%s,'
-                 ' argtype=%s, optional=%s)', repr(prompt), repr(mapping),
-                 repr(help), repr(default), repr(argtype), repr(optional))
+                 ' argtype=%s, optional=%s, raw=%s)', repr(prompt),
+                 repr(mapping), repr(help), repr(default), repr(argtype),
+                 repr(optional), repr(raw))
     # tell the user about the default value by including it in the prompt
     if default is not None:
         _prompt = "%s [%s] > " % (prompt, default)
@@ -212,16 +252,14 @@ def prompter(prompt, mapping, help, default, argtype=None, optional=False):
         if map:
             print(mapstr)
         # get input from user
+        history_length = readline.get_current_history_length()
         val = inputfunc(_prompt).strip()
         # Lines read at this stage, are params to a command.
-        # We remove them from the history.
-        # Note that we only do this for non-empty lines! If we do it for all
-        # lines, we would remove history that should not be removed ;)
-        # Only delete if there are history items
-        history_length = readline.get_current_history_length()
-        if val and history_length > 0:
-            rlh_to_delete = history_length
-            readline.remove_history_item(rlh_to_delete-1)
+        # We remove them from the history, but only if the input function
+        # added them.  getpass() never does, and input() skips empty lines
+        # and lines identical to the previous one.
+        if readline.get_current_history_length() > history_length:
+            readline.remove_history_item(history_length)
 
         # only let empty value pass if default or optional
         if not val and not default:
@@ -238,42 +276,35 @@ def prompter(prompt, mapping, help, default, argtype=None, optional=False):
             else:
                 print(help)
         else:
-            # if mapping, return the corresponding key,
+            # if mapping, return the corresponding key(s),
             # else just return what the user typed.
-            if map:
-                selections = None
-                if val.isdigit():  # Single digit
-                    try:
-                        i = int(val)
-                    except ValueError:
-                        print("Please type a number matching one of the items")
-                    if i <= 0:
-                        return IndexError("Negative")
-                    try:
-                        return map[i - 1]  # -1 because human input is off by +1
-                    except IndexError:
-                        print("The item you selected does not exist")
-                elif re.search(r"\d+-\d+", val):    # range
-                    values = val.split("-")
-                    try:
-                        start = int(values[0]) - 1
-                        end = int(values[1]) - 1
-                        selections = map[start:end]
-                    except ValueError:
-                        print("Please specify a range, eg. 1-3")
-                    except IndexError:
-                        print("The item you selected does not exist")
-                    return selections
-                elif re.search(r"(\d+,)+\d", val):  # comma separated
-                    values = [elem.strip() for elem in val.split(',')]
-                    try:
-                        selections = [map[int(elem) - 1] for elem in values]
-                    except ValueError:
-                        print("Please specify a list separated by commas, eg. 1,2,3")
-                    except IndexError:
-                        print("The item you selected does not exist")
-                    return selections
+            if map and not raw:
+                try:
+                    selection = _parse_selection(val, len(map))
+                except ValueError as e:
+                    print(e)
+                    continue
+                if selection is None:
+                    print("Please type a number matching one of the items")
+                    continue
+                if isinstance(selection, list):
+                    return [map[number - 1] for number in selection]
+                return map[selection - 1]
             return val
+
+
+def _uses_libedit():
+    """
+    Check if the readline module uses libedit (editline) rather than GNU
+    readline.
+
+    This is the case for e.g. python-build-standalone builds (used by uv and
+    mise) and Python on macOS.  libedit needs its own syntax for key bindings.
+    """
+    backend = getattr(readline, 'backend', None)  # Python 3.13+
+    if backend is not None:
+        return backend == 'editline'
+    return 'libedit' in (readline.__doc__ or '')
 
 
 def repl(bofh, charset=None, prompt=None):
@@ -291,6 +322,9 @@ def repl(bofh, charset=None, prompt=None):
     :param charset: The charset for input, or None to find from system
     :param prompt: User defined prompt, if specified
     :raises: SystemExit
+
+    Ctrl+C aborts the current line or command, and Ctrl+D (EOF) on an empty
+    line exits the loop.
     """
     if not prompt:
         prompt = DEFAULT_PROMPT
@@ -300,7 +334,10 @@ def repl(bofh, charset=None, prompt=None):
 
     ioutil = IOUtil(default_prompt=prompt, encoding=charset)
 
-    readline.parse_and_bind("tab: complete")
+    if _uses_libedit():
+        readline.parse_and_bind("bind ^I rl_complete")
+    else:
+        readline.parse_and_bind("tab: complete")
     readline.set_completer(BofhCompleter(bofh, charset))
     while True:
         # read input
@@ -311,13 +348,16 @@ def repl(bofh, charset=None, prompt=None):
             if not line:
                 continue
         except EOFError:
+            # Ctrl+D - exit
             logger.debug('EOFError on input()', exc_info=True)
+            print("")
             print("So long, and thanks for all the fish!")
             return
         except KeyboardInterrupt:
+            # Ctrl+C - discard the current line, and ask for a new command
             logger.debug('KeyboardInterrupt on input()', exc_info=True)
             print("")
-            raise SystemExit()
+            continue
         if script_file is not None:
             script_file.write("%s%s\n" % (prompt, line))
         try:
@@ -350,9 +390,11 @@ def repl(bofh, charset=None, prompt=None):
             logger.debug('protocol error on parse/eval', exc_info=True)
             # Error from the bofh server
             print(six.text_type(e.args[0]))
-        except EOFError:
-            # Sent from prompt func. Just ask for new command
-            logger.debug('EOFError on parse/eval', exc_info=True)
+        except (EOFError, KeyboardInterrupt):
+            # Ctrl+D or Ctrl+C in prompt func, or Ctrl+C while waiting for
+            # the server.  Abort the command, and ask for a new command.
+            logger.debug('EOFError/KeyboardInterrupt on parse/eval',
+                         exc_info=True)
             print()
         except parser.SynErr as e:
             logger.debug('syntax error on parse/eval', exc_info=True)
